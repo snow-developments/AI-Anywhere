@@ -19,8 +19,17 @@ internal static class Program {
 #pragma warning restore WFO5001
 
     var splash = new SplashForm();
-    using var tray = new TrayIcon(splash);
-    Application.Run(splash);
+    var tray = new TrayIcon(splash);
+    // Ensure the tray icon is removed from the shell even on paths that skip
+    // normal disposal (unhandled-exception Abort -> Environment.Exit, or a
+    // host shutdown that bypasses `using`). ProcessExit fires before the
+    // process tears down; destroying the icon there guarantees the shell
+    // sees the hide message before we go.
+    AppDomain.CurrentDomain.ProcessExit += (_, _) => tray.Destroy();
+    using (tray) {
+      Application.Run(splash);
+    }
+    tray.Destroy();
   }
 
   private static void HandleException(Exception? e) {

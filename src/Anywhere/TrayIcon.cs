@@ -10,6 +10,7 @@ namespace Anywhere;
 internal sealed class TrayIcon : IDisposable {
   private readonly NotifyIcon notifyIcon;
   private readonly SplashForm splash;
+  private bool disposed;
 
   internal TrayIcon(SplashForm splash) {
     this.splash = splash;
@@ -62,7 +63,17 @@ internal sealed class TrayIcon : IDisposable {
   }
 
   public void Dispose() {
-    notifyIcon.Visible = false;
-    notifyIcon.Dispose();
+    Destroy();
+  }
+
+  // Idempotent teardown for paths that bypass `using` (Environment.Exit,
+  // ProcessExit). Hiding before Dispose ensures the shell sees the icon go
+  // away even if the process is about to terminate.
+  internal void Destroy() {
+    if (!disposed) {
+      notifyIcon.Visible = false;
+      notifyIcon.Dispose();
+      disposed = true;
+    }
   }
 }
