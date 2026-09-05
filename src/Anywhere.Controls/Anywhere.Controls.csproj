@@ -11,4 +11,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.1.3" />
+    <!--
+      Vortice.Direct2D1 transitively brings in Vortice.DirectWrite (referenced
+      via `using Vortice.DirectWrite;` in MarkdownLabel.cs); a separate
+      Vortice.DirectWrite package doesn't exist on NuGet.
+    -->
+    <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
+  </ItemGroup>
+
 </Project>
