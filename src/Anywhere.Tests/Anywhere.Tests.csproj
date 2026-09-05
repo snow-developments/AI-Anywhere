@@ -24,4 +24,13 @@
     <ProjectReference Include="..\Anywhere.Controls\Anywhere.Controls.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      Copy the fake ACP agent script alongside the test binary so integration
+      tests can resolve it via AppContext.BaseDirectory regardless of where
+      `dotnet test` happens to set the working directory.
+    -->
+    <None Include="FakeAgent\**\*.py" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
