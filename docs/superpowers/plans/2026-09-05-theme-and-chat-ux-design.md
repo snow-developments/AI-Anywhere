@@ -61,27 +61,27 @@ Follow-ups (not blocking):
 Also renamed `ConversationForm` → `ChatForm` (`ChatForm.cs` /
 `ChatForm.Designer.cs`, refs in `SplashForm`).
 
-### 2. Submit feedback
+### 2. Submit feedback — DONE 2026-09-05
 
-A prompt submit still gives no visible signal until the reply streams
-(`transcript.StartAgentMessage()` opens an empty bubble and that's it). Want a
-busy state — disable the input, show a spinner or "…" placeholder — cleared in a
-`finally` on all of success / error / cancel.
+`ChatInputPanel.SetBusy(bool)`: disables `InputBox`, swaps the Send button to
+"Stop", sets the `GroupBox` caption to "Working…". `ChatForm.OnSendRequested`
+calls `SetBusy(true)` after `StartAgentMessage()` and `SetBusy(false)` in a
+`finally` covering success / error / cancel. No spinner control — the caption is
+the signal, no custom painting.
 
-### 3. Cancel in flight
+### 3. Cancel in flight — DONE 2026-09-05
 
-`AgentProcess.SendPromptAsync` may keep its `CancellationToken` parameter
-(tracked in a separate change). If it does, add the UI: a
-`CancellationTokenSource` per send in `ChatForm`, a Send↔Stop toggle on
-`ChatInputPanel`, and an `OperationCanceledException` catch that writes
-`"Cancelled."` to the transcript rather than `"Agent error: …"`. Folds together
-with item 2.
+`SendPromptAsync` kept its `CancellationToken`. `ChatForm` holds a
+`CancellationTokenSource? sendCts` per send, passes `sendCts.Token`, and
+disposes/nulls it in the same `finally` as item 2. `ChatInputPanel` raises
+`CancelRequested` when the Stop button is clicked while busy (Enter is ignored
+while busy); `ChatForm.OnCancelRequested` calls `sendCts?.Cancel()`. A
+`catch (OperationCanceledException)` writes `"Cancelled."` to the transcript
+instead of `"Agent error: …"`.
 
-### 4. User-configurable theme override (`TODO.md`)
+### 4. User-configurable theme override — split out
 
-Let the user force light/dark on top of the OS default. `SetColorMode` takes
-`Dark` / `Classic` explicitly, so this is a persisted setting feeding the
-`Program.cs` call.
+Moved to its own plan: `2026-09-05-theme-override.md`. Not started.
 
 ### 5. Phase 4 toolbar row
 

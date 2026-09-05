@@ -7,8 +7,9 @@
       visible captions. Always use the app's current theme. For context, this
       to-do task is referring to caption background colors in form non-client
       areas.
-- [ ] Make light/dark theme user-configurable (override on top of the
-      OS-detected default from `ThemeService`).
+- [ ] Make light/dark theme user-configurable (force Light/Dark over the
+      OS-detected default). Plan:
+      `docs/superpowers/plans/2026-09-05-theme-override.md`.
 
 ## Branding
 

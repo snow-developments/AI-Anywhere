@@ -11,11 +11,13 @@ public partial class ChatForm : Form {
   private AgentProcess? agent;
   private MessageRepository? messages;
   private int sessionId;
+  private CancellationTokenSource? sendCts;
 
   public ChatForm() {
     InitializeComponent();
     permissionPanel.OutcomeChosen += OnPermissionOutcomeChosen;
     inputPanel.SendRequested += OnSendRequested;
+    inputPanel.CancelRequested += OnCancelRequested;
     Load += OnLoad;
     FormClosed += OnFormClosed;
   }
@@ -65,13 +67,23 @@ public partial class ChatForm : Form {
     await messages.InsertAsync(sessionId, "user", text, null);
 
     transcript.StartAgentMessage();
+    sendCts = new CancellationTokenSource();
+    inputPanel.SetBusy(true);
     try {
-      var result = await agent.SendPromptAsync(text);
+      var result = await agent.SendPromptAsync(text, sendCts.Token);
       await messages.InsertAsync(sessionId, "agent", result.Content, null);
+    } catch (OperationCanceledException) {
+      transcript.AppendMessage("system", "Cancelled.");
     } catch (Exception ex) {
       transcript.AppendMessage("system", $"Agent error: {ex.Message}");
+    } finally {
+      inputPanel.SetBusy(false);
+      sendCts.Dispose();
+      sendCts = null;
     }
   }
+
+  private void OnCancelRequested() => sendCts?.Cancel();
 
   private async void OnPermissionOutcomeChosen(string requestId, PermissionOutcome outcome) {
     if (agent is null) return;

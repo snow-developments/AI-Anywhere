@@ -29,10 +29,27 @@ public sealed class ChatInputPanel : GroupBox {
     Width = Spacing.Small,
   };
 
+  private bool busy;
+
   /// <summary>Raised when the user clicks Send or presses Enter.</summary>
   public event Action? SendRequested;
 
+  /// <summary>Raised when the user clicks Stop while a prompt is in flight.</summary>
+  public event Action? CancelRequested;
+
   public TextBox InputBox => inputBox;
+
+  /// <summary>
+  /// Toggle the in-flight state: disables the text box, swaps Send for Stop,
+  /// and shows a caption. The host clears this in a <c>finally</c> on every
+  /// outcome (success, error, cancel).
+  /// </summary>
+  public void SetBusy(bool value) {
+    busy = value;
+    inputBox.Enabled = !value;
+    sendButton.Text = value ? "Stop" : "Send";
+    Text = value ? "Working…" : string.Empty;
+  }
 
   public ChatInputPanel() {
     Text = string.Empty;
@@ -44,9 +61,15 @@ public sealed class ChatInputPanel : GroupBox {
     Controls.Add(spacer);
     Controls.Add(sendButton);
 
-    sendButton.Click += (_, _) => SendRequested?.Invoke();
+    sendButton.Click += (_, _) => {
+      if (busy) {
+        CancelRequested?.Invoke();
+      } else {
+        SendRequested?.Invoke();
+      }
+    };
     inputBox.KeyDown += (_, e) => {
-      if (e.KeyCode != Keys.Enter || e.Shift) return;
+      if (e.KeyCode != Keys.Enter || e.Shift || busy) return;
       e.SuppressKeyPress = true;
       SendRequested?.Invoke();
     };
