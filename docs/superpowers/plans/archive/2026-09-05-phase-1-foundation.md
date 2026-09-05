@@ -202,7 +202,7 @@ add their own):**
   `Anywhere.Controls` → `Anywhere.Design`, and `Anywhere` → `Anywhere.Models`),
   and a runnable empty test project — every later task builds on top of this.
 
-- [ ] **Step 1: Create the WinForms project from the .NET SDK's included
+- [x] **Step 1: Create the WinForms project from the .NET SDK's included
       `winforms` template**
 
 Do not hand-write `Program.cs`/`MainForm.cs`/`MainForm.Designer.cs` — let the
@@ -212,14 +212,14 @@ template generate them, then edit the generated files in later steps.
 dotnet new winforms -n Anywhere -o src/Anywhere --framework net10.0-windows
 ```
 
-- [ ] **Step 2: Create the Anywhere.Design class library (framework-agnostic,
+- [x] **Step 2: Create the Anywhere.Design class library (framework-agnostic,
       plain net10.0)**
 
 ```bash
 dotnet new classlib -n Anywhere.Design -o src/Anywhere.Design --framework net10.0
 ```
 
-- [ ] **Step 3: Create the Anywhere.Controls class library (WinForms-targeted)**
+- [x] **Step 3: Create the Anywhere.Controls class library (WinForms-targeted)**
 
 ```bash
 dotnet new classlib -n Anywhere.Controls -o src/Anywhere.Controls --framework net10.0-windows
@@ -230,7 +230,7 @@ Edit the generated `src/Anywhere.Controls/Anywhere.Controls.csproj` to add
 (the plain `classlib` template doesn't enable WinForms by default the way the
 `winforms` app template does).
 
-- [ ] **Step 3b: Create the Anywhere.Models class library (framework-agnostic,
+- [x] **Step 3b: Create the Anywhere.Models class library (framework-agnostic,
       plain net10.0)**
 
 ```bash
@@ -242,13 +242,13 @@ dotnet new classlib -n Anywhere.Models -o src/Anywhere.Models --framework net10.
 2). It's a sibling to `Anywhere.Design` in the dependency graph, not a child of
 it.
 
-- [ ] **Step 4: Create the test project**
+- [x] **Step 4: Create the test project**
 
 ```bash
 dotnet new xunit -n Anywhere.Tests -o src/Anywhere.Tests --framework net10.0
 ```
 
-- [ ] **Step 5: Create the solution and add all five projects**
+- [x] **Step 5: Create the solution and add all five projects**
 
 ```bash
 dotnet new sln -n Anywhere
@@ -259,7 +259,7 @@ dotnet sln add src/Anywhere/Anywhere.csproj
 dotnet sln add src/Anywhere.Tests/Anywhere.Tests.csproj
 ```
 
-- [ ] **Step 6: Wire up project references (Anywhere → Anywhere.Controls →
+- [x] **Step 6: Wire up project references (Anywhere → Anywhere.Controls →
       Anywhere.Design, and Anywhere → Anywhere.Models)**
 
 ```bash
@@ -271,7 +271,7 @@ dotnet add src/Anywhere.Tests/Anywhere.Tests.csproj reference src/Anywhere.Contr
 dotnet add src/Anywhere.Tests/Anywhere.Tests.csproj reference src/Anywhere.Models/Anywhere.Models.csproj
 ```
 
-- [ ] **Step 6b: Initialize the local dotnet-ef tool manifest**
+- [x] **Step 6b: Initialize the local dotnet-ef tool manifest**
 
 ```bash
 dotnet new tool-manifest
@@ -281,7 +281,7 @@ dotnet tool install dotnet-ef
 This pins `dotnet-ef` as a per-repo local tool (invoked as `dotnet ef ...`)
 rather than requiring a global install — needed by Task 2's migrations.
 
-- [ ] **Step 7: Write a trivial smoke test**
+- [x] **Step 7: Write a trivial smoke test**
 
 ```csharp
 // src/Anywhere.Tests/SmokeTest.cs
@@ -297,17 +297,17 @@ public class SmokeTest
 }
 ```
 
-- [ ] **Step 8: Run the test to verify the project graph builds**
+- [x] **Step 8: Run the test to verify the project graph builds**
 
 Run: `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj` Expected: PASS (1
 test).
 
-- [ ] **Step 9: Set MainForm's window title**
+- [x] **Step 9: Set MainForm's window title**
 
 Edit `src/Anywhere/MainForm.Designer.cs`, set `this.Text = "ACP Client";` in
 `InitializeComponent()`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A
@@ -340,7 +340,7 @@ task that adds a WinForms control is expected to use these tokens instead of
 literal margin/padding/font values, and Tasks 6-8 and Phase 4's Task 10 have
 been amended accordingly.
 
-- [ ] **Step 1: Implement `Spacing`**
+- [x] **Step 1: Implement `Spacing`**
 
 ```csharp
 // src/Anywhere.Design/Spacing.cs
@@ -355,7 +355,7 @@ public static class Spacing
 }
 ```
 
-- [ ] **Step 2: Implement `Typography`**
+- [x] **Step 2: Implement `Typography`**
 
 ```csharp
 // src/Anywhere.Design/Typography.cs
@@ -374,7 +374,7 @@ public static class Typography
 shared static instance would risk being disposed by one consumer out from under
 another; each caller gets its own instance.)
 
-- [ ] **Step 3: Implement `Colors`**
+- [x] **Step 3: Implement `Colors`**
 
 ```csharp
 // src/Anywhere.Design/Colors.cs
@@ -390,7 +390,7 @@ public static class Colors
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
@@ -428,7 +428,7 @@ store, and tests exercise the real SQLite provider rather than a fake).
 `ProfileRepository` is a concrete class over the already-abstract
 `DbContext`/`DbSet<T>` EF Core gives us.
 
-- [ ] **Step 1: Add EF Core packages to `Anywhere.Models`**
+- [x] **Step 1: Add EF Core packages to `Anywhere.Models`**
 
 ```bash
 dotnet add src/Anywhere.Models/Anywhere.Models.csproj package Microsoft.EntityFrameworkCore.Sqlite
@@ -439,7 +439,7 @@ dotnet add src/Anywhere.Models/Anywhere.Models.csproj package Microsoft.EntityFr
 `dotnet ef` needs to scaffold/apply migrations; it only needs to live in the
 project that owns the `DbContext` (`Anywhere.Models`), not in `Anywhere`.
 
-- [ ] **Step 2: Write the failing test for profile insert/get against a real
+- [x] **Step 2: Write the failing test for profile insert/get against a real
       SQLite file**
 
 ```csharp
@@ -494,14 +494,14 @@ public class ProfileRepositoryTests : IDisposable
 }
 ```
 
-- [ ] **Step 2b: Run test to verify it fails (types don't exist yet)**
+- [x] **Step 2b: Run test to verify it fails (types don't exist yet)**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter ProfileRepositoryTests`
 Expected: FAIL (compile error — `AnywhereDbContext`, `AgentProfile`,
 `ProfileRepository` not defined).
 
-- [ ] **Step 3: Implement `AgentProfile`**
+- [x] **Step 3: Implement `AgentProfile`**
 
 A plain mutable class, not a record — EF Core's value converters (used below for
 `Args`/`Env`) and change tracking work most predictably against settable
@@ -525,7 +525,7 @@ public sealed class AgentProfile
 }
 ```
 
-- [ ] **Step 4: Implement `AnywhereDbContext`**
+- [x] **Step 4: Implement `AnywhereDbContext`**
 
 ```csharp
 // src/Anywhere.Models/AnywhereDbContext.cs
@@ -575,7 +575,7 @@ public sealed class AnywhereDbContext : DbContext
 this same context — one `DbContext` for the whole app's persistence, matching
 the spec's single-database design.)
 
-- [ ] **Step 5: Implement the design-time factory (needed for `dotnet ef` to
+- [x] **Step 5: Implement the design-time factory (needed for `dotnet ef` to
       work without running the app)**
 
 `AnywhereDbContext`'s constructor takes a `dbPath` argument, so EF's tooling
@@ -604,7 +604,7 @@ public sealed class AnywhereDbContextFactory : IDesignTimeDbContextFactory<Anywh
 of generating a migration file — harmless, but worth knowing about rather than
 being surprised by it the first time it happens.
 
-- [ ] **Step 6: Implement `ProfileRepository`**
+- [x] **Step 6: Implement `ProfileRepository`**
 
 ```csharp
 // src/Anywhere/Persistence/ProfileRepository.cs
@@ -634,13 +634,13 @@ public sealed class ProfileRepository
 }
 ```
 
-- [ ] **Step 7: Run the test to verify it passes**
+- [x] **Step 7: Run the test to verify it passes**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter ProfileRepositoryTests`
 Expected: PASS.
 
-- [ ] **Step 8: Generate the initial migration**
+- [x] **Step 8: Generate the initial migration**
 
 ```bash
 dotnet ef migrations add InitialCreate --project src/Anywhere.Models --startup-project src/Anywhere
@@ -653,7 +653,7 @@ Production startup (wired in Phase 3) calls
 fixture in Step 2 is the one place `EnsureCreated()` belongs (see Global
 Constraints).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A
@@ -690,7 +690,7 @@ with EF Core already tracking/materializing these types cleanly, an extra DTO
 layer would just be a second, parallel definition of the same shape (see Global
 Constraints on abstractions).
 
-- [ ] **Step 1: Implement `Session` and `Message` entities**
+- [x] **Step 1: Implement `Session` and `Message` entities**
 
 ```csharp
 // src/Anywhere.Models/Session.cs
@@ -720,7 +720,7 @@ public sealed class Message
 }
 ```
 
-- [ ] **Step 2: Add the `DbSet`s to `AnywhereDbContext`**
+- [x] **Step 2: Add the `DbSet`s to `AnywhereDbContext`**
 
 Edit `src/Anywhere.Models/AnywhereDbContext.cs`:
 
@@ -733,7 +733,7 @@ No new `OnModelCreating` configuration is needed — `Session`/`Message` have no
 JSON-converted columns, so EF Core's default conventions (int PK, FK by naming
 convention on `ProfileId`/`SessionId`) are sufficient.
 
-- [ ] **Step 3: Write the failing test for session + message round trip**
+- [x] **Step 3: Write the failing test for session + message round trip**
 
 ```csharp
 // src/Anywhere.Tests/MessageRepositoryTests.cs
@@ -792,14 +792,14 @@ public class MessageRepositoryTests : IDisposable
 }
 ```
 
-- [ ] **Step 4: Run test to verify it fails**
+- [x] **Step 4: Run test to verify it fails**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter MessageRepositoryTests`
 Expected: FAIL (compile error — `SessionRepository`/`MessageRepository` not
 defined).
 
-- [ ] **Step 5: Implement `SessionRepository`**
+- [x] **Step 5: Implement `SessionRepository`**
 
 ```csharp
 // src/Anywhere/Persistence/SessionRepository.cs
@@ -827,7 +827,7 @@ public sealed class SessionRepository
 }
 ```
 
-- [ ] **Step 6: Implement `MessageRepository`**
+- [x] **Step 6: Implement `MessageRepository`**
 
 ```csharp
 // src/Anywhere/Persistence/MessageRepository.cs
@@ -862,19 +862,19 @@ public sealed class MessageRepository
 }
 ```
 
-- [ ] **Step 7: Run the test to verify it passes**
+- [x] **Step 7: Run the test to verify it passes**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter MessageRepositoryTests`
 Expected: PASS.
 
-- [ ] **Step 8: Add a migration for the new tables**
+- [x] **Step 8: Add a migration for the new tables**
 
 ```bash
 dotnet ef migrations add AddSessionsAndMessages --project src/Anywhere.Models --startup-project src/Anywhere
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A

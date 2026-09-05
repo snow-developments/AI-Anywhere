@@ -5,7 +5,8 @@ file.
 
 ## Project Status
 
-Phases 1-3 (`docs/superpowers/plans/2026-09-05-phase-{1,2,3}-*.md`) and the
+Phases 1-3 (`docs/superpowers/plans/archive/2026-09-05-phase-{1,2,3}-*.md`,
+archived as complete) and the
 splash-form/`ConversationForm`-rename plan are implemented. Phase 4
 (`docs/superpowers/plans/2026-09-05-phase-4-polish.md` — crash recovery, profile
 management UI, visual styling) has not been executed yet.

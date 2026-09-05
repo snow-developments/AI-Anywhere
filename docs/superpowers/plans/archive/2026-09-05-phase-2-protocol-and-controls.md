@@ -126,14 +126,14 @@ about incremental output can ignore the event.
   living in the `Anywhere.Controls` project — consumed by Phase 3 (chat
   transcript panel).
 
-- [ ] **Step 1: Read the source control**
+- [x] **Step 1: Read the source control**
 
 Read `D:\Users\enigm\GitHub\family-lock-out\Controls\MarkdownLabel.cs` in full
 to understand its exact public API (property names, constructor, `OnPaint`
 override, Markdig/Vortice usage) before copying — do not assume the property
 names guessed in the spec.
 
-- [ ] **Step 2: Add Markdig and Vortice package references**
+- [x] **Step 2: Add Markdig and Vortice package references**
 
 ```bash
 dotnet add src/Anywhere.Controls/Anywhere.Controls.csproj package Markdig
@@ -144,13 +144,13 @@ dotnet add src/Anywhere.Controls/Anywhere.Controls.csproj package Vortice.Direct
 (Adjust exact Vortice package names to match whichever `Vortice.*` namespaces
 the source file actually imports — confirm from Step 1's read.)
 
-- [ ] **Step 3: Copy the control into the new project, renaming the namespace**
+- [x] **Step 3: Copy the control into the new project, renaming the namespace**
 
 Copy the file to `src/Anywhere.Controls/MarkdownLabel.cs`, change
 `namespace FamilyLockout.Controls` to `namespace Anywhere.Controls`, and fix any
 using-directives that referenced the old project.
 
-- [ ] **Step 4: Write a smoke test that constructs the control
+- [x] **Step 4: Write a smoke test that constructs the control
       off-UI-thread-safely**
 
 ```csharp
@@ -173,7 +173,7 @@ public class MarkdownLabelTests
 (If the source control exposes a different property than `Text` for the markdown
 source, use that property name here instead — confirmed in Step 1.)
 
-- [ ] **Step 5: Add the WinForms test SDK for `[WinFormsFact]`**
+- [x] **Step 5: Add the WinForms test SDK for `[WinFormsFact]`**
 
 ```bash
 dotnet add src/Anywhere.Tests/Anywhere.Tests.csproj package WinForms.UITest.Foundation
@@ -184,13 +184,13 @@ with plain `[Fact]` (WinForms controls can be constructed off-thread in a
 headless test as long as no message loop is required) — try plain `[Fact]` first
 since it avoids an extra dependency.
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter MarkdownLabelTests`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -233,7 +233,7 @@ Step 6).
   `PermissionRequest`/`PermissionOutcome`/`OnResponseChunk` members created here
   rather than redefining them) and Phase 4 (crash recovery, protocol debug log).
 
-- [ ] **Step 1: Add the acp-csharp package**
+- [x] **Step 1: Add the acp-csharp package**
 
 ```bash
 dotnet add src/Anywhere/Anywhere.csproj package AcpCSharp
@@ -243,7 +243,7 @@ dotnet add src/Anywhere/Anywhere.csproj package AcpCSharp
 README/NuGet listing — adjust the id above if it differs, e.g. it may be
 published as `Acp.CSharp` or similar.)
 
-- [ ] **Step 2: Write a minimal fake ACP agent for integration testing**
+- [x] **Step 2: Write a minimal fake ACP agent for integration testing**
 
 ```python
 # src/Anywhere.Tests/FakeAgent/fake_agent.py
@@ -281,14 +281,14 @@ update kind. If `acp-csharp`'s actual wire framing or update-notification shape
 differs, adjust `send`/`read_message` and the `session/update` payload to match
 after reading the library's transport implementation in Step 3.)
 
-- [ ] **Step 3: Read acp-csharp's public API for `ClientSideConnection`**
+- [x] **Step 3: Read acp-csharp's public API for `ClientSideConnection`**
 
 Before writing `AgentProcess`, read the actual
 `ClientSideConnection`/`IAcpClient` API from the installed `acp-csharp` package
 (via NuGet cache or its GitHub source) to get exact method/event names — do not
 guess signatures.
 
-- [ ] **Step 4: Write the failing integration test**
+- [x] **Step 4: Write the failing integration test**
 
 ```csharp
 // src/Anywhere.Tests/AgentProcessIntegrationTests.cs
@@ -345,13 +345,13 @@ public class AgentProcessIntegrationTests
 }
 ```
 
-- [ ] **Step 5: Run test to verify it fails**
+- [x] **Step 5: Run test to verify it fails**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter AgentProcessIntegrationTests`
 Expected: FAIL (compile error — `AgentProcess`, `PromptResult` not defined).
 
-- [ ] **Step 6: Implement `PromptResult`, `PermissionRequest`,
+- [x] **Step 6: Implement `PromptResult`, `PermissionRequest`,
       `PermissionOutcome`**
 
 ```csharp
@@ -375,7 +375,7 @@ namespace Anywhere.Controls;
 public enum PermissionOutcome { Allow, AllowAlways, Deny }
 ```
 
-- [ ] **Step 7: Implement `AgentProcess`, including `OnResponseChunk`**
+- [x] **Step 7: Implement `AgentProcess`, including `OnResponseChunk`**
 
 Implement `AgentProcess` in `src/Anywhere/Agents/AgentProcess.cs`, wrapping a
 `System.Diagnostics.Process` (launching `Profile.Command` with
@@ -392,13 +392,13 @@ Add `public event Action<string>? OnResponseChunk;`, raised from whichever
 chunk's text content each time one arrives, before `SendPromptAsync`'s awaited
 `Task<PromptResult>` completes with the final response.
 
-- [ ] **Step 8: Run the test to verify it passes**
+- [x] **Step 8: Run the test to verify it passes**
 
 Run:
 `dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter AgentProcessIntegrationTests`
 Expected: PASS (both tests).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A

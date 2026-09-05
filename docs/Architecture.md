@@ -71,4 +71,4 @@ actually materializes.
   Guidelines: `.agents/guidance/Abstractions.md`
 - The implementation rationale in the original single-file plan and the
   Foundation plan: `docs/superpowers/plans/2026-09-04-acp-winforms-client.md`
-  and `docs/superpowers/plans/2026-09-05-phase-1-foundation.md`
+  and `docs/superpowers/plans/archive/2026-09-05-phase-1-foundation.md`

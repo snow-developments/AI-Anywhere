@@ -29,19 +29,19 @@ Fluent/WinUI3-styled controls; already a project dependency of
 also:
 
 - Phase 1 —
-  [2026-09-05-anywhere-phase1-foundation.md](2026-09-05-anywhere-phase1-foundation.md)
+  [archive/2026-09-05-phase-1-foundation.md](archive/2026-09-05-phase-1-foundation.md)
   (scaffolding, EF Core persistence, canonical file structure)
 - Phase 2 —
-  [2026-09-05-anywhere-phase2-protocol-and-controls.md](2026-09-05-anywhere-phase2-protocol-and-controls.md)
+  [archive/2026-09-05-phase-2-protocol-and-controls.md](archive/2026-09-05-phase-2-protocol-and-controls.md)
   (MarkdownLabel control, ACP agent process wrapper)
 - Phase 3 —
-  [2026-09-05-anywhere-phase3-core-ui.md](2026-09-05-anywhere-phase3-core-ui.md)
+  [archive/2026-09-05-phase-3-core-ui.md](archive/2026-09-05-phase-3-core-ui.md)
   (chat transcript UI, permission/diff panel)
 
 ## Global Constraints
 
 Full project-wide constraints are listed in
-[Phase 1's Global Constraints](2026-09-05-anywhere-phase1-foundation.md#global-constraints).
+[Phase 1's Global Constraints](archive/2026-09-05-phase-1-foundation.md#global-constraints).
 The one that bound this phase's original draft and has been corrected here:
 
 - Visual styling: `WinForms.Fluent.UI` NuGet package (referenced only by
@@ -59,7 +59,7 @@ The one that bound this phase's original draft and has been corrected here:
 ## File Structure
 
 Files this phase adds/modifies, within the canonical structure defined in
-[Phase 1](2026-09-05-anywhere-phase1-foundation.md#file-structure):
+[Phase 1](archive/2026-09-05-phase-1-foundation.md#file-structure):
 
 ```
 src/

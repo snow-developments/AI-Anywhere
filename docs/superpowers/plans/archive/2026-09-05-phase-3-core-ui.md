@@ -105,7 +105,7 @@ src/
   configured agent profile and displays the streamed response incrementally as a
   growing markdown bubble, persisted to SQLite once the turn completes.
 
-- [ ] **Step 1: Implement `ChatTranscriptPanel`, appending incrementally as
+- [x] **Step 1: Implement `ChatTranscriptPanel`, appending incrementally as
       chunks arrive**
 
 `AppendMessage` still exists for one-shot messages (the user's own prompt, and
@@ -174,13 +174,13 @@ public sealed class ChatTranscriptPanel : FlowLayoutPanel
 Task 4 confirmed as the real property name — and `Spacing`'s exact member names
 to match Phase 1 Task 1b.)
 
-- [ ] **Step 2: Wire MainForm layout — transcript, input box, send button**
+- [x] **Step 2: Wire MainForm layout — transcript, input box, send button**
 
 Edit `src/Anywhere/MainForm.Designer.cs` to add: a `ChatTranscriptPanel` docked
 `Fill`, a `TextBox` (`_inputBox`) docked `Bottom` inside a `Panel`, and hook
 `_inputBox.KeyDown` for Enter-to-send in `MainForm.cs`.
 
-- [ ] **Step 3: Wire MainForm to start a hardcoded test profile and relay
+- [x] **Step 3: Wire MainForm to start a hardcoded test profile and relay
       messages incrementally**
 
 In `MainForm.cs`, on load: construct `AnywhereDbContext` at
@@ -199,14 +199,14 @@ appends while this is in flight — and once it completes, persist the final
 showing it from the accumulated chunks; the persisted row is what
 `MessageRepository.ListForSessionAsync` will later replay for history).
 
-- [ ] **Step 4: Manual verification**
+- [x] **Step 4: Manual verification**
 
 Run: `dotnet run --project src/Anywhere/Anywhere.csproj` Expected: window opens,
 typing text and pressing Enter shows the user's message immediately and (once a
 real streaming agent profile is configured) the agent's reply growing
 incrementally as chunks arrive, rendered as markdown.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -238,7 +238,7 @@ implements `PermissionDiffPanel` against those existing types.
   requests with Allow/Allow-always/Deny buttons and an inline diff view,
   collapsing to zero height when idle.
 
-- [ ] **Step 1: Implement `PermissionDiffPanel`**
+- [x] **Step 1: Implement `PermissionDiffPanel`**
 
 ```csharp
 // src/Anywhere.Controls/PermissionDiffPanel.cs
@@ -308,7 +308,7 @@ public sealed class PermissionDiffPanel : TableLayoutPanel
 `Anywhere.Design.Spacing` member — it's a one-off panel height, not a reusable
 spacing unit; `Padding`/`Margin` values are what `Spacing` exists for.)
 
-- [ ] **Step 2: Wire into MainForm**
+- [x] **Step 2: Wire into MainForm**
 
 In `MainForm.Designer.cs`, add a `PermissionDiffPanel` docked `Bottom`, placed
 between the transcript (`Fill`) and the input panel (also `Bottom`) so it sits
@@ -317,14 +317,14 @@ above the input box. In `MainForm.cs`, subscribe
 `_permissionPanel.ShowRequest(...)`, and `_permissionPanel.OutcomeChosen` to
 call `AgentProcess.RespondToPermissionAsync(...)`.
 
-- [ ] **Step 3: Manual verification**
+- [x] **Step 3: Manual verification**
 
 Run: `dotnet run --project src/Anywhere/Anywhere.csproj`, trigger a permission
 request against a real or fake agent that requests file-write permission.
 Expected: panel appears above the input box showing the diff and three buttons;
 clicking one hides the panel and unblocks the agent's turn.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
