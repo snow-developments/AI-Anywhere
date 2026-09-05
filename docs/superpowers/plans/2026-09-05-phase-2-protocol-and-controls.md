@@ -436,3 +436,125 @@ git commit -m "feat: wrap acp-csharp ClientSideConnection in AgentProcess"
   names, including the exact shape of `session/update`/`agent_message_chunk`
   notifications (Task 5 Steps 1 & 3), `MarkdownLabel`'s real public property
   name (Task 4 Step 1).
+
+## Implementation Notes (2026-09-05)
+
+Notes from the actual implementation session; recorded here so the next phase
+inherits them and the next plan author doesn't re-discover the same gotchas.
+
+### `acp-csharp` (nuskey8/acp-csharp)
+
+- **NuGet package id is `AgentClientProtocol`**, not `AcpCSharp`. Current
+  version is `0.1.5`. The `.csproj` uses `<PackageReference Include="AgentClientProtocol" Version="0.1.5" />`.
+- **Wire framing is newline-delimited JSON**, one JSON object per line —
+  read by `TextReader.ReadLine()` inside `JsonRpcEndpoint.ReadMessagesAsync`.
+  It is **not** the `Content-Length`-framed LSP-style framing the canonical
+  ACP TypeScript reference implementation uses. The fake agent and any
+  third-party agent we shell out to must terminate every message with `\n`.
+- **`ClientSideConnection` constructor:** `(Func<IAcpAgent, IAcpClient> toClient,
+  TextReader reader, TextWriter writer)`. The callback receives the
+  `IAcpAgent` (the connection itself, since it implements that interface for
+  the other side) and must return an `IAcpClient` implementation that the
+  connection will invoke when the agent sends notifications / requests back.
+- **Required handshake sequence:** `Open()` (background read loop) →
+  `InitializeAsync(InitializeRequest { ProtocolVersion = 1, ClientCapabilities = new() })`
+  → `NewSessionAsync(NewSessionRequest { Cwd, McpServers = [] })` →
+  `PromptAsync(PromptRequest { SessionId, Prompt = [new TextContentBlock { Text }] })`.
+  We must stash `NewSessionResponse.SessionId` for use in `PromptRequest`.
+- **`PromptResponse` only carries `StopReason`**, not content. Content must be
+  assembled from `IAcpClient.SessionNotificationAsync` `AgentMessageChunkSessionUpdate`
+  notifications with `Content` of type `TextContentBlock`.
+- **Streaming chunks:** `AgentMessageChunkSessionUpdate.Content` is a
+  `ContentBlock` (abstract). Switch on runtime type — only `TextContentBlock`
+  is text; `ImageContentBlock`/`AudioContentBlock`/`ResourceLinkContentBlock`/
+  `ResourceContentBlock` are not (yet) surfaced to the UI in v1.
+- **Permissions:** the agent invokes `session/request_permission` by calling
+  `IAcpClient.RequestPermissionAsync(RequestPermissionRequest)`. That returns a
+  `ValueTask<RequestPermissionResponse>` — the C# side can block as long as it
+  wants (no timeout from the library). The `ToolCall` field is typed as
+  `object`; at runtime it's a `JsonElement` whose `title`/`name`/`description`
+  we surface into `PermissionRequest`.
+- **`PermissionOptionKind` enum** has four values: `AllowOnce`, `AllowAlways`,
+  `RejectOnce`, `RejectAlways`. We map `PermissionOutcome.Allow` →
+  `AllowOnce`, `AllowAlways` → `AllowAlways`, `Deny` →
+  `RejectOnce` or `RejectAlways` (whichever the agent offered, else return
+  `CancelledRequestPermissionOutcome`).
+- **Terminal / fs methods** on `IAcpClient` are unused in v1 — throw
+  `NotImplementedException("Terminal support is out of scope for v1.")` from
+  each. `ExtMethodAsync`/`ExtNotificationAsync` likewise.
+- **`Connection.Open()` starts the background read loop in a fire-and-forget
+  task** (`Task.Run(async () => await endpoint.ReadMessagesAsync(cts.Token))`).
+  The `CancellationTokenSource` is internal; `Dispose()` on the connection
+  cancels it. `AgentProcess` is `IDisposable` and disposes the connection plus
+  kills the subprocess (`Process.Kill(entireProcessTree: true)` followed by
+  `WaitForExit(2000)`) so tests using `using var process = ...` don't leak
+  Python processes.
+
+### `MarkdownLabel` (adapted from `family-lock-out/Controls/MarkdownLabel.cs`)
+
+- **Source property is `Text`** (WinForms standard `Control.Text`), confirmed
+  from the source — the plan's note that the property name should be confirmed
+  before copy is satisfied; no rename needed.
+- **Packages:** only `Vortice.Direct2D1` is needed; `Vortice.DirectWrite` does
+  not exist as a separate NuGet package — `using Vortice.DirectWrite;` works
+  because `Vortice.Direct2D1` brings in the DirectWrite types as a transitive
+  dependency. The plan's Step 2 listing both was wrong; only `Vortice.Direct2D1`
+  is referenced.
+- **WinForms source-generator errors:** the source had two properties
+  (`AutoSizeMode` and `BlockSpacing`) that triggered `WFO1000` ("does not
+  configure code serialization") when built against .NET 10. Fix: add
+  `[DefaultValue(AutoSizeMode.GrowOnly)]` and `[DefaultValue(6f)]` on the
+  respective properties. `dotnet format` will also reorder usings and insert
+  a missing indent on the `AutoSize` setter — both are auto-fixed.
+- **Two pre-existing CS8765 warnings** on the `Font` and `Text` setters
+  (nullability mismatch with `Control`'s nullable overrides). Source had them
+  too on .NET 8; they're harmless warnings in .NET 10 as well.
+- **Smoke test uses plain `[Fact]`**, not `[WinFormsFact]` from
+  `WinForms.UITest.Foundation`. The control's `Handle` is lazy, so
+  constructing it off-thread never triggers `OnHandleCreated`/`OnPaint`, and
+  the test only round-trips `Text` — no message loop required.
+
+### Integration test pitfalls (resolved)
+
+- **Fake agent script path must be resolved via `AppContext.BaseDirectory`**,
+  not relative to `Directory.GetCurrentDirectory()`. `dotnet test` runs tests
+  with cwd set to the bin directory, not the repo root. Adding
+  `<None Include="FakeAgent\**\*.py" CopyToOutputDirectory="PreserveNewest" />`
+  to `Anywhere.Tests.csproj` copies the script into `bin/.../FakeAgent/` so
+  `Path.Combine(AppContext.BaseDirectory, "FakeAgent", "fake_agent.py")`
+  resolves.
+- **Python stdout is block-buffered when piped** (not attached to a TTY).
+  Even with `sys.stdout.flush()` after every write, the buffered bytes never
+  reach the C# `TextReader.ReadLine()` until the buffer fills or the process
+  exits — at which point `acp-csharp` writes fail with `IOException: The pipe
+  is being closed`. Fix: call `sys.stdout.reconfigure(line_buffering=True)`
+  at script startup. This avoids needing `python -u` or `PYTHONUNBUFFERED=1`
+  in the agent profile's `Args`/`Env`.
+- **`[Fact(Timeout = 30000)]` on both integration tests.** Without this, a
+  hang in `StartAsync` (e.g. while debugging the buffering issue above)
+  silently hangs the test host forever — the user has to kill the runner
+  manually. With the timeout, the test fails cleanly after 30 s and the
+  suite exits. Pair with `using var process = new AgentProcess(...)` in
+  each test so `Dispose` runs even on timeout, killing the orphan Python
+  subprocess.
+- **Test ordering:** xUnit runs tests in non-deterministic order by default,
+  but if a previous test left an orphaned Python subprocess, the next test
+  can fail with confusing errors. `AgentProcess.Dispose` handles teardown;
+  if a hang still escapes, `taskkill /F /IM python.exe` cleans up.
+
+### Plan author should also know
+
+- **Missing assets regression:** the original Phase 1 scaffold left
+  `assets/icons/Anywhere.ico` (and friends) on disk but never committed them.
+  `Anywhere.csproj` references the icon via `<ApplicationIcon>` and
+  `<EmbeddedResource>`, so the build only worked locally; CI / fresh clones
+  would have failed. The Phase 2 commit history now includes a separate
+  `Add chat-compass icon assets` commit before the MarkdownLabel and
+  AgentProcess commits to fix this. Future plans that touch `Anywhere.csproj`
+  should assume `assets/` exists in HEAD.
+- **AGENTS.md GitHub-queries rule was strengthened** in this session after
+  the implementation agent (me) silently used the `fetch` tool against
+  `api.github.com` instead of `gh api` for several rounds of acp-csharp
+  source queries. The rule now explicitly forbids `fetch`/`curl` against
+  `api.github.com` and `raw.githubusercontent.com`, with examples of the
+  `gh api` equivalents.
