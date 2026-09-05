@@ -1,0 +1,32 @@
+[
+  {
+    "label": "Run",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "command": "dotnet watch run --project src/Anywhere/Anywhere.csproj",
+    "hide": "on_success"
+  },
+  {
+    "label": "Test",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "command": "dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj",
+    "hide": "on_success"
+  },
+  {
+    "label": "Build",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "command": "dotnet build Anywhere.slnx",
+    "hide": "on_success"
+  },
+  {
+    "label": "Format",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "command": "dotnet format Anywhere.slnx --verify-no-changes",
+    "hide": "on_success"
+  },
+  {
+    "label": "Lint",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "command": "dotnet cslint",
+    "hide": "on_success"
+  }
+]
