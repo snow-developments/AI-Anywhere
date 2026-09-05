@@ -19,24 +19,9 @@ csharp_prefer_braces = true:suggestion
 csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_style_prefer_top_level_statements = false:suggestion
 dotnet_diagnostic.IDE0210.severity = none
-
-# Pattern matching / null checks
-csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
-csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
-csharp_style_conditional_delegate_call = true:suggestion
-csharp_style_throw_expression = true:suggestion
-csharp_style_prefer_null_check_over_type_check = true:suggestion
-
-# Private instance fields: camelCase, no leading underscore.
-# See .agents/guidance/Style Guide.md#naming.
-dotnet_naming_rule.private_fields_camel_case.symbols  = private_fields
-dotnet_naming_rule.private_fields_camel_case.style    = camel_case_style
-dotnet_naming_rule.private_fields_camel_case.severity = warning
-
-dotnet_naming_symbols.private_fields.applicable_kinds           = field
-dotnet_naming_symbols.private_fields.applicable_accessibilities = private
-
-dotnet_naming_style.camel_case_style.capitalization = camel_case
+# Style Guide.md's brace-omission rule for single simple statements overrides
+# csharp_prefer_braces above; don't flag those as missing braces.
+dotnet_diagnostic.IDE0011.severity = none
 
 # Formatting
 csharp_new_line_before_open_brace = none
@@ -47,3 +32,21 @@ csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
 csharp_space_after_keywords_in_control_flow_statements = true
 csharp_using_directive_placement = outside_namespace:suggestion
+
+# Pattern matching / null checks
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+csharp_style_throw_expression = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+
+# Private instance fields (including private consts): camelCase, no leading underscore.
+# See .agents/guidance/Style Guide.md#naming.
+dotnet_naming_rule.private_fields_camel_case.symbols  = private_fields
+dotnet_naming_rule.private_fields_camel_case.style    = camel_case_style
+dotnet_naming_rule.private_fields_camel_case.severity = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds           = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.camel_case_style.capitalization = camel_case

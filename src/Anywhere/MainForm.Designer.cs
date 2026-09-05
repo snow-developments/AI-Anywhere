@@ -6,6 +6,11 @@ partial class MainForm {
   /// </summary>
   private System.ComponentModel.IContainer components = null;
 
+  private Anywhere.Controls.ChatTranscriptPanel transcript;
+  private Anywhere.Controls.PermissionDiffPanel permissionPanel;
+  private System.Windows.Forms.Panel inputPanel;
+  private System.Windows.Forms.TextBox inputBox;
+
   /// <summary>
   ///  Clean up any resources being used.
   /// </summary>
@@ -24,10 +29,32 @@ partial class MainForm {
   /// </summary>
   private void InitializeComponent() {
     components = new System.ComponentModel.Container();
+    transcript = new Anywhere.Controls.ChatTranscriptPanel();
+    permissionPanel = new Anywhere.Controls.PermissionDiffPanel();
+    inputPanel = new System.Windows.Forms.Panel();
+    inputBox = new System.Windows.Forms.TextBox();
+
+    inputPanel.SuspendLayout();
+
+    inputBox.Dock = System.Windows.Forms.DockStyle.Fill;
+    inputBox.Margin = new System.Windows.Forms.Padding(Anywhere.Design.Spacing.Small);
+
+    inputPanel.Controls.Add(inputBox);
+    inputPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+    inputPanel.Height = 32;
+    inputPanel.Padding = new System.Windows.Forms.Padding(Anywhere.Design.Spacing.Small);
+
+    Controls.Add(transcript);
+    Controls.Add(permissionPanel);
+    Controls.Add(inputPanel);
+
     AutoScaleMode = AutoScaleMode.Font;
     ClientSize = new Size(800, 450);
+    // FIXME: Regression: App icon is missing
     StartPosition = FormStartPosition.CenterScreen;
-    Text = "AI Anywhere";
+    Text = "Anywhere";
+
+    inputPanel.ResumeLayout(false);
   }
 
   #endregion

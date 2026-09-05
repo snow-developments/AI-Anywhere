@@ -115,7 +115,14 @@ public sealed class AgentProcess : IDisposable {
   }
 
   public void Dispose() {
-    connection?.Dispose();
+    try {
+      connection?.Dispose();
+    } catch (ObjectDisposedException) {
+      // acp-csharp's ClientSideConnection.Dispose() calls Cancel() on its internal
+      // CancellationTokenSource; if the read loop already tore itself down (e.g.
+      // the agent process exited/closed its streams first), that CTS is already
+      // disposed and Cancel() throws. Dispose() must never throw, so swallow it.
+    }
     if (process is not null && !process.HasExited) {
       try {
         process.Kill(entireProcessTree: true);
