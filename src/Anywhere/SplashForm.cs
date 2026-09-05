@@ -39,6 +39,7 @@ public partial class SplashForm : Form {
   private async void SplashForm_Shown(object? sender, EventArgs e) {
     try {
       await LoadRecentSessionsAsync();
+      await LoadProfilesAsync();
     } catch (Exception ex) {
       // Don't crash the splash if the DB isn't ready or anything else goes
       // wrong. Show the empty state and surface the error in a placeholder
@@ -64,13 +65,30 @@ public partial class SplashForm : Form {
     }
   }
 
+  private async Task LoadProfilesAsync() {
+    using var db = new AnywhereDbContext(AnywhereDbContext.DefaultDbPath());
+    var all = await new Persistence.ProfileRepository(db).ListAllAsync();
+    profilePicker.DisplayMember = nameof(AgentProfile.Name);
+    profilePicker.DataSource = null;
+    profilePicker.DataSource = all;
+  }
+
+  private async Task ManageProfilesAsync() {
+    using (var db = new AnywhereDbContext(AnywhereDbContext.DefaultDbPath())) {
+      using var form = new AgentProfileForm(new Persistence.ProfileRepository(db));
+      form.ShowDialog(this);
+    }
+    await LoadProfilesAsync();
+  }
+
   /// <summary>
   /// Opens a <see cref="ChatForm"/> for the given session, or for a
-  /// brand-new session if <paramref name="sessionId"/> is null.
+  /// brand-new session if <paramref name="sessionId"/> is null. The profile
+  /// chosen in the splash picker (if any) seeds the new conversation.
   /// </summary>
   // FIXME: `sessionId` is unused
   internal void OpenConversation(int? sessionId) {
-    var form = new ChatForm { Owner = this };
+    var form = new ChatForm(profilePicker.SelectedItem as AgentProfile) { Owner = this };
     form.Show();
     Hide();
   }

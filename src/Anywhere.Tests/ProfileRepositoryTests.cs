@@ -36,6 +36,43 @@ public class ProfileRepositoryTests : IDisposable {
     Assert.Equal(new[] { "--stdio" }, fetched.Args);
   }
 
+  [Fact]
+  public async Task UpdateAsync_then_GetAsync_returns_the_updated_fields() {
+    ProfileRepository repo = new ProfileRepository(db);
+    int id = await repo.InsertAsync(new AgentProfile {
+      Name = "Original",
+      Command = "cmd1",
+      Args = Array.Empty<string>(),
+      Env = new System.Collections.Generic.Dictionary<string, string>(),
+      WorkingDir = @"C:\work",
+    });
+
+    AgentProfile? toUpdate = await repo.GetAsync(id);
+    toUpdate!.Name = "Renamed";
+    toUpdate.Command = "cmd2";
+    await repo.UpdateAsync(toUpdate);
+
+    AgentProfile? fetched = await repo.GetAsync(id);
+    Assert.Equal("Renamed", fetched!.Name);
+    Assert.Equal("cmd2", fetched.Command);
+  }
+
+  [Fact]
+  public async Task DeleteAsync_removes_the_profile() {
+    ProfileRepository repo = new ProfileRepository(db);
+    int id = await repo.InsertAsync(new AgentProfile {
+      Name = "Temp",
+      Command = "cmd",
+      Args = Array.Empty<string>(),
+      Env = new System.Collections.Generic.Dictionary<string, string>(),
+      WorkingDir = @"C:\work",
+    });
+
+    await repo.DeleteAsync(id);
+
+    Assert.Null(await repo.GetAsync(id));
+  }
+
   public void Dispose() {
     db.Dispose();
     Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools(); // releases the pooled native handle so the temp file can be deleted on Windows

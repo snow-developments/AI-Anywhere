@@ -94,6 +94,51 @@ src/
 
 ---
 
+## Status (2026-09-05)
+
+- **Task 8** (crash recovery + debug log): implemented, `DebugLogPanel` since
+  renamed to `DebugLog`.
+- **Task 9** (profile management): implemented + tests; profile selection wired
+  into both `SplashForm` and `ChatForm`.
+- **Task 10** (visual styling): **superseded.** `WinForms.Fluent.UI` was dead;
+  `Krypton.Toolkit` was tried and rejected (Office look, not Fluent) and has
+  been fully reverted — the app is back to stock WinForms controls +
+  `Application.SetColorMode(SystemColorMode.System)`. Real Fluent styling now
+  has its own plan:
+  [2026-09-05-anywhere-winforms-fluent.md](2026-09-05-anywhere-winforms-fluent.md)
+  (build `Anywhere.WinForms.Fluent`, a D2D-rendered Fluent control library, and
+  adopt it — Task 12 there replaces this task).
+
+`dotnet build` + `dotnet format` clean; 12/12 tests pass. Outstanding:
+manual-verification of Tasks 8-9 and all **Commit** steps — left for the user.
+
+## Execution decisions (2026-09-05)
+
+Locked with the user before executing; these override the task text where they
+conflict:
+
+- **File renames.** `MainForm` is now `ChatForm` (`src/Anywhere/ChatForm.cs` /
+  `ChatForm.Designer.cs`); `SplashForm` is the app shell. Every "MainForm"
+  reference below means `ChatForm`.
+- **Task 8 Step 1 (`OnProtocolWarning`).** Confirmed from `AgentProcess.cs`:
+  `acp-csharp` swallows JSON-RPC parse errors internally (its `errorWriteFunc`
+  is unreachable without forking). Implement `OnProtocolWarning` by reading the
+  already-redirected `Process.StandardError` asynchronously and raising one
+  event per non-empty line — Implementation Notes option 1.
+- **Task 9 profile selection — both entry points.** `SplashForm`'s "New
+  conversation" flow picks the profile to start a session with and passes it to
+  `ChatForm`; `ChatForm` also carries an inline profile dropdown (bottom action
+  bar, per `docs/superpowers/plans/chat-input.png`) to switch the active
+  profile mid-conversation. "Manage Profiles…" opens `AgentProfileForm` from
+  both.
+- **Task 10 library — `Krypton.Toolkit`, not `WinForms.Fluent.UI`.**
+  `WinForms.Fluent.UI` is abandoned (last release Dec 2022, native `DirectNCore`
+  dependency) and was never actually referenced by `Anywhere.Controls`.
+  Replaced with `Krypton.Toolkit` (BSD-3, actively maintained). Task 10 below is
+  rewritten accordingly.
+
+---
+
 ## Task 8: Agent crash recovery and debug log
 
 **Files:**
@@ -403,77 +448,82 @@ git commit -m "feat: add agent profile management UI with edit/delete and args p
 
 ---
 
-## Task 10: Apply WinForms.Fluent.UI visual styling
+## Task 10: Apply Krypton.Toolkit visual styling
+
+> Rewritten 2026-09-05 (see Execution decisions): `WinForms.Fluent.UI` is dead
+> and was never a real dependency. `Krypton.Toolkit` (BSD-3, actively
+> maintained) replaces it. Same intent — swap the plain Win32 controls on
+> `ChatForm` for themed equivalents, leave the custom-painted panels
+> (`ChatTranscriptPanel`, `PermissionDiffPanel`) alone.
 
 **Files:**
 
-- Modify: `src/Anywhere/MainForm.cs`
-- Modify: `src/Anywhere/MainForm.Designer.cs`
+- Modify: `src/Anywhere/Anywhere.csproj` (add the package reference)
+- Modify: `src/Anywhere/Program.cs` (global palette + color-mode wiring)
+- Modify: `src/Anywhere/ChatForm.cs` / `ChatForm.Designer.cs`
+- Modify: `src/Anywhere/SplashForm.cs` / `SplashForm.Designer.cs` (themed
+  buttons/list on the shell)
+- Modify: `src/Anywhere/AgentProfileForm.cs` / `.Designer.cs` (themed inputs)
 
 **Interfaces:**
 
-- Consumes: nothing new (applies to the existing `MainForm` and its controls
-  from Phase 1 Task 1 and Tasks 6-9).
-- Produces: a `MainForm` and its child controls rendered with
-  `WinForms.Fluent.UI`'s Fluent/WinUI3-styled equivalents, instead of default
-  Win32 visual styles, for the controls the library covers — default WinForms
-  controls with no Fluent equivalent keep their default Win32 look (this is an
-  "add new controls" library, not an app-wide visual-style override; see Global
-  Constraints).
+- Consumes: `Anywhere.Design.Colors.Accent` (Phase 1, Task 1b).
+- Produces: `ChatForm`, `SplashForm`, and `AgentProfileForm` rendered with
+  Krypton themed controls (`KryptonButton`, `KryptonTextBox`, `KryptonComboBox`,
+  `KryptonListBox`, `KryptonPanel`) under a single app-wide
+  `KryptonManager.GlobalPaletteMode`, with the ribbon accent taken from
+  `Anywhere.Design.Colors.Accent`. Custom-painted controls keep their look.
 
-- [ ] **Step 1: Confirm the `WinForms.Fluent.UI` package reference**
-
-`Anywhere.Controls.csproj` should already reference `WinForms.Fluent.UI` from
-Phase 1's scaffolding (it's the library
-`ChatTranscriptPanel`/`PermissionDiffPanel`/`DebugLogPanel` were built against
-per the spec). Run:
+- [ ] **Step 1: Add the `Krypton.Toolkit` package reference**
 
 ```bash
-dotnet list src/Anywhere.Controls/Anywhere.Controls.csproj package
+dotnet add src/Anywhere/Anywhere.csproj package Krypton.Toolkit
 ```
 
-Expected: `WinForms.Fluent.UI` appears in the output. If it's missing, add it
-before continuing:
+- [ ] **Step 2: Confirm the current Krypton API via Context7 before wiring**
 
-```bash
-dotnet add src/Anywhere.Controls/Anywhere.Controls.csproj package WinForms.Fluent.UI
-```
+Query Context7 (`/taiizor/...` no — use `Krypton-Suite/Standard-Toolkit`) for:
+the .NET 10 target framework moniker it ships, the `KryptonManager` /
+`GlobalPaletteMode` enum values for a Microsoft-365 dark/light palette, whether
+it honours `Application.SetColorMode`, and the exact control class names
+(`KryptonButton`, `KryptonTextBox`, `KryptonComboBox`, `KryptonListBox`,
+`KryptonPanel`, `KryptonForm`). Do not guess — mirror Phase 2's "read the real
+API first" rule. Record what you find inline in this step before coding.
 
-- [ ] **Step 2: Read WinForms.Fluent.UI's setup docs before wiring it in**
+- [ ] **Step 3: Global palette wiring in `Program.cs`**
 
-Read the `WinForms.Fluent.UI` README/NuGet listing for its exact initialization
-and per-control API (which Fluent control classes exist — e.g. a Fluent-styled
-`Button`/`TextBox` replacement — whether it needs an app-level initialization
-call in `Program.cs`, and whether `MainForm` needs a specific base class or a
-theme/accent-color setter) — do not guess the API surface. This mirrors how
-Phase 2 Task 5 required reading `acp-csharp`'s real API before coding against
-it.
+After `ApplicationConfiguration.Initialize()` and the existing
+`Application.SetColorMode(SystemColorMode.System)` block, add a
+`KryptonManager` with `GlobalPaletteMode` set to the Microsoft-365 palette
+whose light/dark variant matches the OS preference (query in Step 2 for the
+exact enum members; if Krypton exposes a "follow system" mode, use that). Where
+the palette API accepts an accent/ribbon colour, pass
+`Anywhere.Design.Colors.Accent`, not a literal — this is `Anywhere.Design`'s
+one integration point in the WinForms shell.
 
-- [ ] **Step 3: Apply the confirmed styling API to MainForm, using
-      `Anywhere.Design`'s palette**
+- [ ] **Step 4: Swap the plain controls on each form**
 
-Using the exact API confirmed in Step 2: swap `MainForm`'s Win32 controls for
-their `WinForms.Fluent.UI` equivalents where the library provides one (buttons,
-the input textbox, etc.), and add any required one-time initialization (in
-`Program.cs` before `Application.Run`, or in `MainForm`'s constructor, per what
-Step 2 found). Wherever that initialization API accepts an accent/theme color (a
-`MaterialSkin`-style `ColorScheme`-equivalent, if `WinForms.Fluent.UI` exposes
-one), pass `Anywhere.Design.Colors`' accent constant rather than a literal —
-this is `Anywhere.Design`'s one real integration point in the WinForms UI itself
-(its other consumers,
-`ChatTranscriptPanel`/`PermissionDiffPanel`/`DebugLogPanel`, use its
-`Spacing`/`Typography` members directly; see Phase 1 Task 1b and Phase 3 Tasks
-6-7). Controls the library has no equivalent for — e.g. `ChatTranscriptPanel`'s
-`FlowLayoutPanel` base, `PermissionDiffPanel`'s `TableLayoutPanel` base — are
-left as-is per the Global Constraints note that this is an additive styling
-library, not an override.
+- `ChatForm`: the profile-picker `ComboBox` and "Manage Profiles…" affordance
+  from Task 9 Step 10 become `KryptonComboBox` / `KryptonButton`; the form's
+  `MenuStrip` stays stock (Krypton's menu equivalents are out of scope).
+  `ChatTranscriptPanel` / `PermissionDiffPanel` / `DebugLogPanel` are
+  untouched — they are custom-painted or plain `TextBox` by design.
+- `SplashForm`: its "New conversation" button and recent-conversations list
+  become `KryptonButton` / `KryptonListBox`; keep the borderless custom title
+  bar.
+- `AgentProfileForm` (Task 9 Step 9): its `TextBox`es, `ListBox`, and buttons
+  become the `Krypton*` equivalents.
 
-- [ ] **Step 4: Manual verification**
+Leave `ChatInputPanel` (Phase 3, `Anywhere.Controls`) as-is for this task — the
+`chat-input.png` redesign of that panel is tracked separately and is not part
+of Phase 4.
 
-Run: `dotnet run --project src/Anywhere/Anywhere.csproj` Expected: window opens
-with `WinForms.Fluent.UI`'s styled controls in place of the default Win32 look
-for the controls it covers; existing chat/permission-panel/profile-management
-functionality from Tasks 6-9 still works unchanged.
+- [ ] **Step 5: Manual verification**
+
+Run: `dotnet run --project src/Anywhere/Anywhere.csproj` Expected: splash and
+conversation windows open with Krypton-themed buttons/inputs/lists that follow
+the OS light/dark setting; chat streaming, permission panel, crash recovery
+(Task 8), and profile management (Task 9) all still work.
 
 - [ ] **Step 5: Commit**
 

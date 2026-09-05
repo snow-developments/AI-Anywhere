@@ -184,6 +184,24 @@ internal static class Program
   themed border too — keep the default `Fixed3D` (or `FixedSingle`) for a
   border that renders correctly in both light and dark.
 
+## Custom Painting
+
+- Default: override `OnPaint(PaintEventArgs e)` and draw with GDI+
+  (`e.Graphics`), or `TextRenderer.DrawText` for text that must match native
+  controls. Set `SetStyle(ControlStyles.ResizeRedraw, true)` for any paint
+  whose layout depends on control size, or a grow only invalidates the newly
+  exposed strip (ghosted/stacked edges).
+- For hardware-accelerated 2D, sub-pixel text, cheap gradients/rounded
+  fills/blur, or a Fluent/WinUI-style control, bind a Direct2D render target to
+  the control handle and draw with Direct2D + DirectWrite instead of GDI+.
+  **REQUIRED SUB-SKILL:** Use `winforms-direct2d-interop` — it covers the
+  `ID2D1HwndRenderTarget` lifecycle, `D2DERR_RECREATE_TARGET` recovery, DPI,
+  factory sharing, and text layout. (Someone asking for "DirectDraw" means
+  Direct2D — DirectDraw is a dead API.) In-repo example:
+  `src/Anywhere.Controls/MarkdownLabel.cs`.
+- A Direct2D control's content is invisible to `Control.DrawToBitmap` — use the
+  `winforms-render-capture` skill to screenshot it.
+
 ## Thread Affinity — the Rule You Cannot Skip
 
 A control's handle belongs to the thread that created it. Any property get/set
@@ -298,6 +316,11 @@ changed every release since .NET 7.
   `Control.DrawToBitmap` and getting a blank area — `DrawToBitmap` only
   captures GDI/GDI+ `WM_PRINT` output. See the `winforms-render-capture`
   skill for `PrintWindow` + `PW_RENDERFULLCONTENT`.
+- Writing Direct2D control code by hand (render-target setup, brush/geometry
+  lifetime, device-loss recovery) instead of following
+  `winforms-direct2d-interop` + `MarkdownLabel.cs` — the
+  `D2DERR_RECREATE_TARGET` path in particular is easy to omit and turns the
+  control permanently black after an RDP reconnect or GPU driver update.
 - Setting high-DPI mode via `app.manifest` on .NET 9+ — use the project
   property or `Application.SetHighDpiMode` instead (manifest approach is
   deprecated, flagged by `WFO0003`).

@@ -9,6 +9,8 @@ partial class SplashForm {
   private readonly ToolTip toolTip = new();
   private readonly Label wordmark = new();
   private readonly Button newConversationButton = new();
+  private readonly ComboBox profilePicker = new();
+  private readonly Button manageProfilesButton = new();
   private readonly TableLayoutPanel recentSection = new();
   private readonly Label recentHeader = new();
   private readonly ListView recentList = new();
@@ -84,12 +86,39 @@ partial class SplashForm {
     newConversationButton.Click += (_, _) => OpenConversation(null);
 
     //
+    // profilePicker
+    //
+    profilePicker.DropDownStyle = ComboBoxStyle.DropDownList;
+    profilePicker.Location = new Point(228, 111);
+    profilePicker.Size = new Size(276, 28);
+    profilePicker.FlatStyle = FlatStyle.Flat;
+    profilePicker.BackColor = Color.FromArgb(0x1F, 0x1F, 0x23);
+    profilePicker.ForeColor = Color.Gainsboro;
+    profilePicker.Font = new Font("Segoe UI", 9F);
+    toolTip.SetToolTip(profilePicker, "Agent profile for the new conversation");
+
+    //
+    // manageProfilesButton
+    //
+    manageProfilesButton.Text = "Manage profiles…";
+    manageProfilesButton.Location = new Point(228, 145);
+    manageProfilesButton.Size = new Size(160, 24);
+    manageProfilesButton.FlatStyle = FlatStyle.Flat;
+    manageProfilesButton.FlatAppearance.BorderSize = 0;
+    manageProfilesButton.BackColor = Color.FromArgb(0x1F, 0x1F, 0x23);
+    manageProfilesButton.ForeColor = Color.Gainsboro;
+    manageProfilesButton.Font = new Font("Segoe UI", 9F);
+    manageProfilesButton.Cursor = Cursors.Hand;
+    manageProfilesButton.TextAlign = ContentAlignment.MiddleLeft;
+    manageProfilesButton.Click += async (_, _) => await ManageProfilesAsync();
+
+    //
     // recentSection
     //
     // Flows the header above the list and lets the list fill all remaining
     // space, flush with the form's right/bottom edges, without manual size math.
-    recentSection.Location = new Point(Spacing.Medium, 168);
-    recentSection.Size = new Size(504, 192);
+    recentSection.Location = new Point(Spacing.Medium, 184);
+    recentSection.Size = new Size(504, 176);
     recentSection.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
     recentSection.ColumnCount = 1;
     recentSection.RowCount = 2;
@@ -131,10 +160,10 @@ partial class SplashForm {
     // Window chrome: borderless, fixed, centered, present in the taskbar so
     // the user can restore it after minimizing the whole app.
     FormBorderStyle = FormBorderStyle.None;
-    ClientSize = new Size(520, 360);
+    ClientSize = new Size(520, 384);
     StartPosition = FormStartPosition.CenterScreen;
     ShowInTaskbar = true;
-    MinimumSize = new Size(520, 360);
+    MinimumSize = new Size(520, 384);
     MaximizeBox = false;
     MinimizeBox = false;
     Text = "Conversations - Anywhere";
@@ -145,6 +174,8 @@ partial class SplashForm {
     BackColor = Color.FromArgb(0x1F, 0x1F, 0x23);
 
     Controls.Add(recentSection);
+    Controls.Add(manageProfilesButton);
+    Controls.Add(profilePicker);
     Controls.Add(newConversationButton);
     Controls.Add(wordmark);
     Controls.Add(titleBar);

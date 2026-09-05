@@ -10,10 +10,18 @@ public partial class ChatForm : Form {
   private AnywhereDbContext? db;
   private AgentProcess? agent;
   private MessageRepository? messages;
+  private ProfileRepository? profiles;
+  private SessionRepository? sessions;
   private int sessionId;
   private CancellationTokenSource? sendCts;
 
-  public ChatForm() {
+  private readonly AgentProfile? startingProfile;
+  private bool populatingPicker;
+
+  public ChatForm() : this(null) { }
+
+  public ChatForm(AgentProfile? profile) {
+    startingProfile = profile;
     InitializeComponent();
     permissionPanel.OutcomeChosen += OnPermissionOutcomeChosen;
     inputPanel.SendRequested += OnSendRequested;
@@ -27,33 +35,110 @@ public partial class ChatForm : Form {
       db = new AnywhereDbContext(AnywhereDbContext.DefaultDbPath());
       db.Database.Migrate();
 
-      var profiles = new ProfileRepository(db);
-      var sessions = new SessionRepository(db);
+      profiles = new ProfileRepository(db);
+      sessions = new SessionRepository(db);
       messages = new MessageRepository(db);
 
-      var profile = new AgentProfile {
-        Name = "fake",
-        Command = "python",
-        Args = [Path.GetFullPath(Path.Combine(
-          AppContext.BaseDirectory, "..", "..", "..", "..",
-          "Anywhere.Tests", "FakeAgent", "fake_agent.py"))],
-        WorkingDir = Environment.CurrentDirectory,
-      };
-      var profileId = await profiles.InsertAsync(profile);
-      sessionId = await sessions.InsertAsync(profileId, profile.WorkingDir);
-
-      agent = new AgentProcess(profile);
-      agent.OnResponseChunk += chunk =>
-        transcript.BeginInvoke(() => transcript.AppendToCurrentAgentMessage(chunk));
-      agent.OnPermissionRequested += request =>
-        permissionPanel.BeginInvoke(() => permissionPanel.ShowRequest(request));
-      agent.OnAgentExited += reason =>
-        transcript.BeginInvoke(() => transcript.AppendMessage("system", $"Agent exited: {reason}"));
-
-      await agent.StartAsync();
+      await ReloadProfilesAsync(startingProfile?.Id);
+      await StartAgentAsync();
     } catch (Exception ex) {
       transcript.AppendMessage("system", $"Failed to start agent: {ex.Message}");
     }
+  }
+
+  /// <summary>
+  /// Repopulate the profile picker from the DB. Seeds a local dev/fake profile
+  /// the first time the table is empty so the app stays runnable before the
+  /// user has configured a real agent.
+  /// </summary>
+  private async Task ReloadProfilesAsync(int? selectId = null) {
+    if (profiles is null) return;
+
+    var all = await profiles.ListAllAsync();
+    if (all.Count == 0) {
+      await profiles.InsertAsync(DevFakeProfile());
+      all = await profiles.ListAllAsync();
+    }
+
+    populatingPicker = true;
+    profilePicker.ComboBox.DisplayMember = nameof(AgentProfile.Name);
+    profilePicker.Items.Clear();
+    foreach (var p in all) profilePicker.Items.Add(p);
+
+    var target = selectId is { } id
+      ? all.FindIndex(p => p.Id == id)
+      : -1;
+    profilePicker.SelectedIndex = target >= 0 ? target : (all.Count > 0 ? 0 : -1);
+    populatingPicker = false;
+  }
+
+  private AgentProfile? SelectedProfile => profilePicker.SelectedItem as AgentProfile;
+
+  /// <summary>
+  /// (Re)start the agent subprocess for the currently selected profile,
+  /// opening a fresh session row. Safe to call repeatedly — a prior agent is
+  /// disposed first.
+  /// </summary>
+  private async Task StartAgentAsync() {
+    if (sessions is null) return;
+
+    agent?.Dispose();
+    agent = null;
+
+    var profile = SelectedProfile;
+    if (profile is null) {
+      transcript.AppendMessage("system", "No agent profile configured. Use Agent ▸ Manage Profiles…");
+      return;
+    }
+
+    sessionId = await sessions.InsertAsync(profile.Id, profile.WorkingDir);
+
+    var next = new AgentProcess(profile);
+    next.OnResponseChunk += chunk =>
+      transcript.BeginInvoke(() => transcript.AppendToCurrentAgentMessage(chunk));
+    next.OnPermissionRequested += request =>
+      permissionPanel.BeginInvoke(() => permissionPanel.ShowRequest(request));
+    next.OnAgentExited += reason =>
+      BeginInvoke(() => {
+        transcript.AppendMessage("system", $"Agent exited ({reason}).");
+        restartBar.Visible = true;
+      });
+    next.OnProtocolWarning += line =>
+      BeginInvoke(() => debugLog.AppendLine(line));
+
+    agent = next;
+    await agent.StartAsync();
+    restartBar.Visible = false;
+  }
+
+  private async void OnRestartAgentClicked(object? sender, EventArgs e) {
+    restartBar.Visible = false;
+    try {
+      await StartAgentAsync();
+    } catch (Exception ex) {
+      transcript.AppendMessage("system", $"Restart failed: {ex.Message}");
+      restartBar.Visible = true;
+    }
+  }
+
+  private void OnToggleDebugLog(object? sender, EventArgs e) =>
+    debugLog.Visible = debugLogMenuItem.Checked;
+
+  private async void OnProfilePickerChanged(object? sender, EventArgs e) {
+    if (populatingPicker || agent is null) return;
+    try {
+      transcript.AppendMessage("system", $"Switched to profile “{SelectedProfile?.Name}”.");
+      await StartAgentAsync();
+    } catch (Exception ex) {
+      transcript.AppendMessage("system", $"Failed to switch profile: {ex.Message}");
+    }
+  }
+
+  private async void OnManageProfilesClicked(object? sender, EventArgs e) {
+    if (profiles is null) return;
+    using var form = new AgentProfileForm(profiles);
+    form.ShowDialog(this);
+    await ReloadProfilesAsync(SelectedProfile?.Id);
   }
 
   private async void OnSendRequested() {
@@ -98,4 +183,13 @@ public partial class ChatForm : Form {
     agent?.Dispose();
     db?.Dispose();
   }
+
+  private static AgentProfile DevFakeProfile() => new() {
+    Name = "fake (dev)",
+    Command = "python",
+    Args = [Path.GetFullPath(Path.Combine(
+      AppContext.BaseDirectory, "..", "..", "..", "..",
+      "Anywhere.Tests", "FakeAgent", "fake_agent.py"))],
+    WorkingDir = Environment.CurrentDirectory,
+  };
 }

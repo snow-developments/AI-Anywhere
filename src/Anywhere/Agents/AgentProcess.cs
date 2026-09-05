@@ -36,10 +36,20 @@ public sealed class AgentProcess : IDisposable {
   private string? sessionId;
   private readonly AcpClientAdapter adapter;
   private long nextRequestId;
+  private bool disposing;
 
   public event Action<string>? OnResponseChunk;
   public event Action<PermissionRequest>? OnPermissionRequested;
   public event Action<string>? OnAgentExited;
+
+  /// <summary>
+  /// Raised for each non-empty line the agent writes to stderr. acp-csharp
+  /// swallows JSON-RPC parse failures internally (its <c>errorWriteFunc</c> is
+  /// wired to a no-op and not reachable without forking), so the agent's own
+  /// stderr is the only host-visible channel for malformed-traffic / startup
+  /// diagnostics. Consumed by the debug log panel.
+  /// </summary>
+  public event Action<string>? OnProtocolWarning;
 
   public AgentProcess(AgentProfile profile) {
     this.profile = profile;
@@ -66,8 +76,21 @@ public sealed class AgentProcess : IDisposable {
       throw new InvalidOperationException("Failed to start agent process.");
     }
     process.EnableRaisingEvents = true;
-    process.Exited += (_, _) => OnAgentExited?.Invoke(
-      $"exit code {process.ExitCode}");
+    process.Exited += (_, _) => {
+      // A caller-initiated Dispose() kills the process (exit code -1 on
+      // Windows) — that is an intentional teardown (profile switch, window
+      // close), not a crash, so stay quiet. Only surface an exit the agent
+      // decided on itself.
+      if (!disposing) OnAgentExited?.Invoke($"exit code {process.ExitCode}");
+    };
+
+    // stderr is redirected but never consumed by acp-csharp; drain it
+    // asynchronously so malformed-traffic / crash diagnostics surface in the
+    // debug log. Safe alongside ClientSideConnection, which only reads stdout.
+    process.ErrorDataReceived += (_, e) => {
+      if (!string.IsNullOrWhiteSpace(e.Data)) OnProtocolWarning?.Invoke(e.Data);
+    };
+    process.BeginErrorReadLine();
 
     connection = new ClientSideConnection(
       _ => adapter,
@@ -124,6 +147,7 @@ public sealed class AgentProcess : IDisposable {
   }
 
   public void Dispose() {
+    disposing = true;
     try {
       connection?.Dispose();
     } catch (ObjectDisposedException) {
