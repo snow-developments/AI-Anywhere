@@ -445,28 +445,32 @@ inherits them and the next plan author doesn't re-discover the same gotchas.
 ### `acp-csharp` (nuskey8/acp-csharp)
 
 - **NuGet package id is `AgentClientProtocol`**, not `AcpCSharp`. Current
-  version is `0.1.5`. The `.csproj` uses `<PackageReference Include="AgentClientProtocol" Version="0.1.5" />`.
-- **Wire framing is newline-delimited JSON**, one JSON object per line —
-  read by `TextReader.ReadLine()` inside `JsonRpcEndpoint.ReadMessagesAsync`.
-  It is **not** the `Content-Length`-framed LSP-style framing the canonical
-  ACP TypeScript reference implementation uses. The fake agent and any
-  third-party agent we shell out to must terminate every message with `\n`.
-- **`ClientSideConnection` constructor:** `(Func<IAcpAgent, IAcpClient> toClient,
-  TextReader reader, TextWriter writer)`. The callback receives the
-  `IAcpAgent` (the connection itself, since it implements that interface for
-  the other side) and must return an `IAcpClient` implementation that the
-  connection will invoke when the agent sends notifications / requests back.
+  version is `0.1.5`. The `.csproj` uses
+  `<PackageReference Include="AgentClientProtocol" Version="0.1.5" />`.
+- **Wire framing is newline-delimited JSON**, one JSON object per line — read by
+  `TextReader.ReadLine()` inside `JsonRpcEndpoint.ReadMessagesAsync`. It is
+  **not** the `Content-Length`-framed LSP-style framing the canonical ACP
+  TypeScript reference implementation uses. The fake agent and any third-party
+  agent we shell out to must terminate every message with `\n`.
+- **`ClientSideConnection` constructor:**
+  `(Func<IAcpAgent, IAcpClient> toClient,
+  TextReader reader, TextWriter writer)`.
+  The callback receives the `IAcpAgent` (the connection itself, since it
+  implements that interface for the other side) and must return an `IAcpClient`
+  implementation that the connection will invoke when the agent sends
+  notifications / requests back.
 - **Required handshake sequence:** `Open()` (background read loop) →
   `InitializeAsync(InitializeRequest { ProtocolVersion = 1, ClientCapabilities = new() })`
   → `NewSessionAsync(NewSessionRequest { Cwd, McpServers = [] })` →
   `PromptAsync(PromptRequest { SessionId, Prompt = [new TextContentBlock { Text }] })`.
   We must stash `NewSessionResponse.SessionId` for use in `PromptRequest`.
 - **`PromptResponse` only carries `StopReason`**, not content. Content must be
-  assembled from `IAcpClient.SessionNotificationAsync` `AgentMessageChunkSessionUpdate`
-  notifications with `Content` of type `TextContentBlock`.
+  assembled from `IAcpClient.SessionNotificationAsync`
+  `AgentMessageChunkSessionUpdate` notifications with `Content` of type
+  `TextContentBlock`.
 - **Streaming chunks:** `AgentMessageChunkSessionUpdate.Content` is a
-  `ContentBlock` (abstract). Switch on runtime type — only `TextContentBlock`
-  is text; `ImageContentBlock`/`AudioContentBlock`/`ResourceLinkContentBlock`/
+  `ContentBlock` (abstract). Switch on runtime type — only `TextContentBlock` is
+  text; `ImageContentBlock`/`AudioContentBlock`/`ResourceLinkContentBlock`/
   `ResourceContentBlock` are not (yet) surfaced to the UI in v1.
 - **Permissions:** the agent invokes `session/request_permission` by calling
   `IAcpClient.RequestPermissionAsync(RequestPermissionRequest)`. That returns a
@@ -475,9 +479,9 @@ inherits them and the next plan author doesn't re-discover the same gotchas.
   `object`; at runtime it's a `JsonElement` whose `title`/`name`/`description`
   we surface into `PermissionRequest`.
 - **`PermissionOptionKind` enum** has four values: `AllowOnce`, `AllowAlways`,
-  `RejectOnce`, `RejectAlways`. We map `PermissionOutcome.Allow` →
-  `AllowOnce`, `AllowAlways` → `AllowAlways`, `Deny` →
-  `RejectOnce` or `RejectAlways` (whichever the agent offered, else return
+  `RejectOnce`, `RejectAlways`. We map `PermissionOutcome.Allow` → `AllowOnce`,
+  `AllowAlways` → `AllowAlways`, `Deny` → `RejectOnce` or `RejectAlways`
+  (whichever the agent offered, else return
   `CancelledRequestPermissionOutcome`).
 - **Terminal / fs methods** on `IAcpClient` are unused in v1 — throw
   `NotImplementedException("Terminal support is out of scope for v1.")` from
@@ -504,15 +508,15 @@ inherits them and the next plan author doesn't re-discover the same gotchas.
   (`AutoSizeMode` and `BlockSpacing`) that triggered `WFO1000` ("does not
   configure code serialization") when built against .NET 10. Fix: add
   `[DefaultValue(AutoSizeMode.GrowOnly)]` and `[DefaultValue(6f)]` on the
-  respective properties. `dotnet format` will also reorder usings and insert
-  a missing indent on the `AutoSize` setter — both are auto-fixed.
+  respective properties. `dotnet format` will also reorder usings and insert a
+  missing indent on the `AutoSize` setter — both are auto-fixed.
 - **Two pre-existing CS8765 warnings** on the `Font` and `Text` setters
   (nullability mismatch with `Control`'s nullable overrides). Source had them
   too on .NET 8; they're harmless warnings in .NET 10 as well.
 - **Smoke test uses plain `[Fact]`**, not `[WinFormsFact]` from
-  `WinForms.UITest.Foundation`. The control's `Handle` is lazy, so
-  constructing it off-thread never triggers `OnHandleCreated`/`OnPaint`, and
-  the test only round-trips `Text` — no message loop required.
+  `WinForms.UITest.Foundation`. The control's `Handle` is lazy, so constructing
+  it off-thread never triggers `OnHandleCreated`/`OnPaint`, and the test only
+  round-trips `Text` — no message loop required.
 
 ### Integration test pitfalls (resolved)
 
@@ -523,24 +527,25 @@ inherits them and the next plan author doesn't re-discover the same gotchas.
   to `Anywhere.Tests.csproj` copies the script into `bin/.../FakeAgent/` so
   `Path.Combine(AppContext.BaseDirectory, "FakeAgent", "fake_agent.py")`
   resolves.
-- **Python stdout is block-buffered when piped** (not attached to a TTY).
-  Even with `sys.stdout.flush()` after every write, the buffered bytes never
-  reach the C# `TextReader.ReadLine()` until the buffer fills or the process
-  exits — at which point `acp-csharp` writes fail with `IOException: The pipe
-  is being closed`. Fix: call `sys.stdout.reconfigure(line_buffering=True)`
-  at script startup. This avoids needing `python -u` or `PYTHONUNBUFFERED=1`
-  in the agent profile's `Args`/`Env`.
-- **`[Fact(Timeout = 30000)]` on both integration tests.** Without this, a
-  hang in `StartAsync` (e.g. while debugging the buffering issue above)
-  silently hangs the test host forever — the user has to kill the runner
-  manually. With the timeout, the test fails cleanly after 30 s and the
-  suite exits. Pair with `using var process = new AgentProcess(...)` in
-  each test so `Dispose` runs even on timeout, killing the orphan Python
-  subprocess.
-- **Test ordering:** xUnit runs tests in non-deterministic order by default,
-  but if a previous test left an orphaned Python subprocess, the next test
-  can fail with confusing errors. `AgentProcess.Dispose` handles teardown;
-  if a hang still escapes, `taskkill /F /IM python.exe` cleans up.
+- **Python stdout is block-buffered when piped** (not attached to a TTY). Even
+  with `sys.stdout.flush()` after every write, the buffered bytes never reach
+  the C# `TextReader.ReadLine()` until the buffer fills or the process exits —
+  at which point `acp-csharp` writes fail with
+  `IOException: The pipe
+  is being closed`. Fix: call
+  `sys.stdout.reconfigure(line_buffering=True)` at script startup. This avoids
+  needing `python -u` or `PYTHONUNBUFFERED=1` in the agent profile's
+  `Args`/`Env`.
+- **`[Fact(Timeout = 30000)]` on both integration tests.** Without this, a hang
+  in `StartAsync` (e.g. while debugging the buffering issue above) silently
+  hangs the test host forever — the user has to kill the runner manually. With
+  the timeout, the test fails cleanly after 30 s and the suite exits. Pair with
+  `using var process = new AgentProcess(...)` in each test so `Dispose` runs
+  even on timeout, killing the orphan Python subprocess.
+- **Test ordering:** xUnit runs tests in non-deterministic order by default, but
+  if a previous test left an orphaned Python subprocess, the next test can fail
+  with confusing errors. `AgentProcess.Dispose` handles teardown; if a hang
+  still escapes, `taskkill /F /IM python.exe` cleans up.
 
 ### Plan author should also know
 
@@ -552,9 +557,9 @@ inherits them and the next plan author doesn't re-discover the same gotchas.
   `Add chat-compass icon assets` commit before the MarkdownLabel and
   AgentProcess commits to fix this. Future plans that touch `Anywhere.csproj`
   should assume `assets/` exists in HEAD.
-- **AGENTS.md GitHub-queries rule was strengthened** in this session after
-  the implementation agent (me) silently used the `fetch` tool against
-  `api.github.com` instead of `gh api` for several rounds of acp-csharp
-  source queries. The rule now explicitly forbids `fetch`/`curl` against
+- **AGENTS.md GitHub-queries rule was strengthened** in this session after the
+  implementation agent (me) silently used the `fetch` tool against
+  `api.github.com` instead of `gh api` for several rounds of acp-csharp source
+  queries. The rule now explicitly forbids `fetch`/`curl` against
   `api.github.com` and `raw.githubusercontent.com`, with examples of the
   `gh api` equivalents.

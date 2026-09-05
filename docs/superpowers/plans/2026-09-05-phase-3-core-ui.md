@@ -367,67 +367,67 @@ git commit -m "feat: add inline permission/diff review panel"
 
 ## Implementation Notes (2026-09-05)
 
-Notes from the upstream work this plan builds on (Phase 2) that affect the
-exact shape of the code blocks above. Each one records a concrete deviation
-the implementer should apply without re-deriving.
+Notes from the upstream work this plan builds on (Phase 2) that affect the exact
+shape of the code blocks above. Each one records a concrete deviation the
+implementer should apply without re-deriving.
 
-- **`MarkdownLabel` markdown source property is `Text`**, confirmed from
-  Phase 2's source adaption (it is `Control.Text` overridden with
+- **`MarkdownLabel` markdown source property is `Text`**, confirmed from Phase
+  2's source adaption (it is `Control.Text` overridden with
   `[Editor(MultilineStringEditor)]`). The code block in Task 6 Step 1 uses
   `Text = ...` already, so it compiles as written — no change needed.
 - **`MarkdownLabel.Width` does not auto-track its parent.** Setting
-  `Width = ClientSize.Width - Spacing.Medium` once on creation is correct
-  for the initial layout, but if the form is resized the bubbles keep their
-  initial pixel width and the right edge looks ragged. Subscribe
-  `ChatTranscriptPanel`'s `ClientSizeChanged` and re-assign every existing
-  bubble's `Width = ClientSize.Width - Spacing.Medium` to follow the
-  container. Without this, `AutoScroll` masks the issue at most widths.
+  `Width = ClientSize.Width - Spacing.Medium` once on creation is correct for
+  the initial layout, but if the form is resized the bubbles keep their initial
+  pixel width and the right edge looks ragged. Subscribe `ChatTranscriptPanel`'s
+  `ClientSizeChanged` and re-assign every existing bubble's
+  `Width = ClientSize.Width - Spacing.Medium` to follow the container. Without
+  this, `AutoScroll` masks the issue at most widths.
 - **`MarkdownLabel` paint runs on the UI thread**, so the
   `StartAgentMessage → AppendToCurrentAgentMessage(...)` chain mutates the
   control directly from `OnResponseChunk`. Phase 2's
   `AgentProcess.OnResponseChunk` is raised on the `acp-csharp` background
-  read-loop thread, so the event handler installed in `MainForm.cs` must
-  marshal back to the UI thread with
-  `_transcript.Invoke(() => _transcript.AppendToCurrentAgentMessage(chunk))`
-  — or use `BeginInvoke` if buffered behavior is acceptable. A direct call
-  to `MarkdownLabel.Text = ...` from the wrong thread throws a cross-thread
+  read-loop thread, so the event handler installed in `MainForm.cs` must marshal
+  back to the UI thread with
+  `_transcript.Invoke(() => _transcript.AppendToCurrentAgentMessage(chunk))` —
+  or use `BeginInvoke` if buffered behavior is acceptable. A direct call to
+  `MarkdownLabel.Text = ...` from the wrong thread throws a cross-thread
   exception when the bubble first lays out (Control subclasses are
   single-threaded affinity-bound).
-- **`AgentProcess` is `IDisposable`**, added in Phase 2's session to ensure
-  the subprocess gets killed and the read-loop cancelled when the owning
-  form closes. `MainForm` must call `agent.Dispose()` in its
-  `OnFormClosed` (or `Dispose(bool)` override) — otherwise the Python
-  subprocess leaks past the form's lifetime and the integration tests would
-  pass while manual smoke tests leave ghost processes around.
+- **`AgentProcess` is `IDisposable`**, added in Phase 2's session to ensure the
+  subprocess gets killed and the read-loop cancelled when the owning form
+  closes. `MainForm` must call `agent.Dispose()` in its `OnFormClosed` (or
+  `Dispose(bool)` override) — otherwise the Python subprocess leaks past the
+  form's lifetime and the integration tests would pass while manual smoke tests
+  leave ghost processes around.
 - **`MessageRepository.InsertAsync` signature is
-  `(int sessionId, string role, string content, string? toolCallJson)`**,
-  not `(int sessionId, string role, string content)`. Phase 1 left the
+  `(int sessionId, string role, string content, string? toolCallJson)`**, not
+  `(int sessionId, string role, string content)`. Phase 1 left the
   `toolCallJson` parameter on the method even though Phase 3 doesn't emit
-  tool-call JSON — pass `null` for now and let Phase 4's tool-call UI fill
-  it in.
-- **`SessionRepository.InsertAsync(int profileId, string workingDir)`**
-  returns the new session id — `MainForm` needs to create one
-  `Session` row at startup (or per-conversation) and remember its id so
-  subsequent `MessageRepository.InsertAsync` calls have a foreign key.
-  Phase 3 Task 6 Step 3's "persist it via `MessageRepository`" step is
-  missing this prerequisite; add a one-time
+  tool-call JSON — pass `null` for now and let Phase 4's tool-call UI fill it
+  in.
+- **`SessionRepository.InsertAsync(int profileId, string workingDir)`** returns
+  the new session id — `MainForm` needs to create one `Session` row at startup
+  (or per-conversation) and remember its id so subsequent
+  `MessageRepository.InsertAsync` calls have a foreign key. Phase 3 Task 6 Step
+  3's "persist it via `MessageRepository`" step is missing this prerequisite;
+  add a one-time
   `var sessionId = await sessions.InsertAsync(profile.Id, profile.WorkingDir)`
   call before the first user message is persisted.
-- **`Anywhere.Design.Spacing` constants are `Tiny`/`Small`/`Medium`/`Large`
-  (= 4/8/16/24)**; `Typography.Body()` and `Typography.Monospace()` are
-  *methods* returning a `Font`, not fields. The Phase 3 plan uses
+- **`Anywhere.Design.Spacing` constants are `Tiny`/`Small`/`Medium`/`Large` (=
+  4/8/16/24)**; `Typography.Body()` and `Typography.Monospace()` are _methods_
+  returning a `Font`, not fields. The Phase 3 plan uses
   `Spacing.Medium`/`Spacing.Small` — those are correct. Phase 4's
-  `DebugLogPanel` example uses `Font = Typography.Monospace` (no
-  parentheses) which is a compile error; the implementer should add `()`.
-- **`AgentProcess.OnResponseChunk` is raised *before* the awaited
+  `DebugLogPanel` example uses `Font = Typography.Monospace` (no parentheses)
+  which is a compile error; the implementer should add `()`.
+- **`AgentProcess.OnResponseChunk` is raised _before_ the awaited
   `SendPromptAsync` task completes**, which is the spec's "stream agent
-  responses" guarantee. `MainForm` does not need any `await Task.Yield()`
-  or `await Task.Run(...)` between `StartAgentMessage()` and
-  `SendPromptAsync(text)` — the chunks arrive during the await, then the
-  final `PromptResult.Content` matches what was already painted.
-- **`PromptResult.Content` is the concatenation of streamed text chunks**,
-  not a structured payload from `PromptResponse`. If a future `MainForm`
+  responses" guarantee. `MainForm` does not need any `await Task.Yield()` or
+  `await Task.Run(...)` between `StartAgentMessage()` and
+  `SendPromptAsync(text)` — the chunks arrive during the await, then the final
+  `PromptResult.Content` matches what was already painted.
+- **`PromptResult.Content` is the concatenation of streamed text chunks**, not a
+  structured payload from `PromptResponse`. If a future `MainForm`
   implementation decides to skip the chunk handler and rely solely on the
-  awaited `Task<PromptResult>`, it loses all interim visible progress but
-  still gets the same final string — the integration test
+  awaited `Task<PromptResult>`, it loses all interim visible progress but still
+  gets the same final string — the integration test
   `SendPromptAsync_returns_the_fake_agents_response` asserts exactly this.

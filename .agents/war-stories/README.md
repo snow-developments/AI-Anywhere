@@ -12,3 +12,4 @@ is not a diary.
 ## Index
 
 - [0001 — Custom theming rewrite, then a from-memory diagnostic ID](0001-theme-rewrite-and-wfo5001.md)
+- [0002 — Chat bubbles: invisible text, then ghost rectangles](0002-chat-bubble-render-bugs.md)
