@@ -16,12 +16,20 @@ public partial class SplashForm : Form {
   }
 
   private void TitleBar_MouseDown(object? sender, MouseEventArgs e) {
-    if (e.Button != MouseButtons.Left) return;
+    if (e.Button != MouseButtons.Left) {
+      return;
+    }
     WindowDrag.Begin(Handle);
   }
 
+  private void RecentList_Resize(object? sender, EventArgs e) {
+    recentList.Columns[0].Width = recentList.ClientSize.Width;
+  }
+
   private void RecentList_DoubleClick(object? sender, EventArgs e) {
-    if (recentList.SelectedItems.Count == 0) return;
+    if (recentList.SelectedItems.Count == 0) {
+      return;
+    }
     int sessionId = Convert.ToInt32(recentList.SelectedItems[0].Tag);
     OpenConversation(sessionId);
   }

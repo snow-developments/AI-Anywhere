@@ -5,11 +5,17 @@ file.
 
 ## Project Status
 
-Pre-implementation. No source code exists yet — only spec, plan, and TODO. The
-plan below (`docs/superpowers/plans/2026-09-04-acp-winforms-client.md`) has not
-been executed; when it has been, update this file's "Commands" section and
-`docs/Architecture.md` to match what was actually built, since the plan's task
-steps are aspirational until then.
+Phases 1-3 (`docs/superpowers/plans/2026-09-05-phase-{1,2,3}-*.md`) and the
+splash-form/`ConversationForm`-rename plan are implemented. Phase 4
+(`docs/superpowers/plans/2026-09-05-phase-4-polish.md` — crash recovery,
+profile management UI, visual styling) has not been executed yet.
+
+UI layer: `SplashForm` is the borderless app-shell window shown at startup
+(custom title bar, "New conversation" button, recent-conversations list);
+`ConversationForm` (formerly `MainForm`) is the per-conversation window,
+composed of `Anywhere.Controls.ChatTranscriptPanel` and `PermissionDiffPanel`.
+The splash owns the message loop and stays open as `Owner` of conversation
+windows; closing it exits the app.
 
 ## What this is thing?
 
