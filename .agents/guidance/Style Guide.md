@@ -34,6 +34,7 @@ The most common DRY violation in this codebase's plans isn't duplicated logic; i
 
 - File-scoped namespaces always: `namespace Anywhere.Models;` on its own line, never the braced block form.
 - 2-space indentation, spaces not tabs, no trailing whitespace, final newline at EOF; see `.editorconfig`.
+- Every `.cs` file is **UTF-8 with BOM and CRLF line endings** (`.editorconfig` `charset`/`end_of_line`, `cslint` `CSLINT003`). New files created by tooling that defaults to LF/no-BOM must be converted before build — `dotnet format` reports these as `CHARSET`/`ENDOFLINE` errors.
 - One blank line between members; no blank line at the top of a block immediately after its opening brace.
 - `var` when the right-hand side makes the type obvious (`var profile = new AgentProfile { ... }`, `var results = await db.Profiles.ToListAsync()`); the explicit type when it doesn't (`int id = ExecuteScalar(...)` if `ExecuteScalar`'s return type isn't visible at a glance).
 
@@ -70,6 +71,23 @@ if (currentRequestId is null)
 ```
 
 Don't omit braces to cram multiple statements onto one line with semicolons, and don't nest a brace-less `if` directly inside another brace-less `if`/`for` (the classic dangling-`else` hazard); add braces the moment there's any nesting, even if each individual level would qualify alone.
+
+### WinForms Control Code
+
+- **Use the `Anywhere.Design` tokens for every metric.** Sizes, padding,
+  margins, and gaps come from `Spacing` (`Spacing.Small`, `Spacing.Medium`,
+  …); colors from `Colors`; fonts from `Typography`. No bare numeric literals
+  for layout (`Width = 72`, `new Padding(8)`) and no `Color.FromArgb(...)` /
+  `new Font(...)` inline in control or designer code.
+- Prefer `AutoSize = true` (with `AutoSizeMode.GrowAndShrink`) over a
+  hardcoded `Width`/`Height` for buttons and labels whose content sizes them.
+- `Margin` is ignored on docked controls. To put a gap between docked
+  siblings, insert a spacer `Panel { Dock = ..., Width|Height = Spacing.X }`
+  rather than reaching for a magic offset.
+- Don't hand-roll theming (per-control `BackColor`/`ForeColor`, a
+  `ThemeService`, custom `OnPaint` for rounded corners). Use standard controls
+  and `Application.SetColorMode` for light/dark; see the
+  `winforms-dotnet-guidance` skill.
 
 ## Relevance to This Repo
 

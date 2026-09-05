@@ -6,16 +6,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Anywhere;
 
-public partial class ConversationForm : Form {
+public partial class ChatForm : Form {
   private AnywhereDbContext? db;
   private AgentProcess? agent;
   private MessageRepository? messages;
   private int sessionId;
 
-  public ConversationForm() {
+  public ChatForm() {
     InitializeComponent();
     permissionPanel.OutcomeChosen += OnPermissionOutcomeChosen;
-    inputBox.KeyDown += OnInputBoxKeyDown;
+    inputPanel.SendRequested += OnSendRequested;
     Load += OnLoad;
     FormClosed += OnFormClosed;
   }
@@ -54,13 +54,12 @@ public partial class ConversationForm : Form {
     }
   }
 
-  private async void OnInputBoxKeyDown(object? sender, KeyEventArgs e) {
-    if (e.KeyCode != Keys.Enter || agent is null || messages is null) return;
-    e.SuppressKeyPress = true;
+  private async void OnSendRequested() {
+    if (agent is null || messages is null) return;
 
-    var text = inputBox.Text;
+    var text = inputPanel.InputBox.Text;
     if (string.IsNullOrWhiteSpace(text)) return;
-    inputBox.Clear();
+    inputPanel.InputBox.Clear();
 
     transcript.AppendMessage("user", text);
     await messages.InsertAsync(sessionId, "user", text, null);

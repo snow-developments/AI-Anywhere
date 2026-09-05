@@ -1,6 +1,7 @@
 # Architecture
 
-Four .NET 10 projects with directed dependencies; **never reverse either arrow**:
+Four .NET 10 projects with directed dependencies; **never reverse either
+arrow**:
 
 `Anywhere` → `Anywhere.Controls` → `Anywhere.Design` `Anywhere` →
 `Anywhere.Models` (parallel branch, sibling to `Anywhere.Design`)
@@ -57,8 +58,8 @@ EF Core) with no second implementation planned, and the project already tests
 the ACP layer against a real fake agent rather than mocks — the same "test the
 real thing" philosophy applies to persistence. `DbContext`/`DbSet<T>` are
 themselves EF Core's abstraction; don't wrap them a second time. Revisit this
-only if a genuine second backing store or a concrete testability need for a
-fake actually materializes.
+only if a genuine second backing store or a concrete testability need for a fake
+actually materializes.
 
 **Cross-references:**
 
@@ -66,9 +67,8 @@ fake actually materializes.
   repository interfaces"
 - The spec, in the "Architecture" → "Agent registry" bullet:
   `docs/superpowers/specs/Design.md`
-- The project-local guidance file that grounds the rule in the Framework
-  Design Guidelines: `.agents/guidance/Abstractions.md`
+- The project-local guidance file that grounds the rule in the Framework Design
+  Guidelines: `.agents/guidance/Abstractions.md`
 - The implementation rationale in the original single-file plan and the
-  Foundation plan:
-  `docs/superpowers/plans/2026-09-04-acp-winforms-client.md` and
-  `docs/superpowers/plans/2026-09-05-phase-1-foundation.md`
+  Foundation plan: `docs/superpowers/plans/2026-09-04-acp-winforms-client.md`
+  and `docs/superpowers/plans/2026-09-05-phase-1-foundation.md`

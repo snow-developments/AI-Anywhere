@@ -149,6 +149,40 @@ internal static class Program
 - Override `Dispose(bool disposing)` and dispose `components` (an
   `IContainer` holding non-visual designer components like timers) — this is
   designer boilerplate, don't delete it even if a class looks unused.
+- **`ResumeLayout(false)` does not run a layout pass.** The real designer gets
+  away with this because `InitializeComponent()` also assigns every child's
+  explicit `Location`/`Size`. A hand-rolled `.Designer.cs` or a custom
+  container that instead relies on `Dock`/`Anchor` for its children will leave
+  them frozen at whatever bounds they had when added, if the container is
+  resized after the `SuspendLayout()` … `ResumeLayout(false)` pair (e.g. a
+  `Dock = Bottom` panel that stretches to full width only once it's added to
+  the form). Symptom: docked children clustered at their original small size in
+  a corner. Fixes, cheapest first: don't `SuspendLayout` a container that has
+  no designer-assigned child bounds; call `ResumeLayout(true)`; or add an
+  explicit `PerformLayout()` after. A custom container that populates its own
+  `Controls` in its constructor should not be wrapped in the parent designer's
+  suspend/resume at all.
+
+## Dark Mode (.NET 9+)
+
+- `Application.SetColorMode(SystemColorMode.Classic | System | Dark)` — call it
+  once at startup, alongside `ApplicationConfiguration.Initialize()`. It is
+  **experimental**: the compiler reports diagnostic **`WFO5001`** as an *error*
+  (not a warning) on `SetColorMode` and `SystemColorMode`, so the call site
+  must `#pragma warning disable WFO5001` / `restore` (or the project must set
+  `<NoWarn>$(NoWarn);WFO5001</NoWarn>`). Introduced experimental in .NET 9 and
+  still experimental in .NET 10 — verify the current status against
+  `https://learn.microsoft.com/dotnet/api/system.windows.forms.application.setcolormode`
+  or the `dotnet/winforms` `docs/list-of-diagnostics.md` for the target TFM
+  rather than assuming.
+- With a color mode set, standard controls follow it automatically through
+  `SystemColors` — including **multiline `TextBox`** (older "dark mode doesn't
+  theme multiline text boxes" lore no longer holds when `SetColorMode` is
+  actually applied). Don't hand-set `BackColor`/`ForeColor` to make a control
+  dark; let it resolve `SystemColors.Window`/`WindowText`.
+- Setting `BorderStyle = BorderStyle.None` on a `TextBox` opts out of the
+  themed border too — keep the default `Fixed3D` (or `FixedSingle`) for a
+  border that renders correctly in both light and dark.
 
 ## Thread Affinity — the Rule You Cannot Skip
 
@@ -209,7 +243,7 @@ Reference: https://learn.microsoft.com/en-us/dotnet/desktop/winforms/controls/bi
 | .NET 7 | High-DPI scaling for nested controls (e.g. buttons inside panels inside tab pages) — opt-in |
 | .NET 8 | Nested-control DPI scaling from .NET 7 now on **by default** |
 | .NET 9 | Async `Form`/control support patterns; `BinaryFormatter` removed (security); experimental dark-mode support added; high-DPI config should go through `Application.SetHighDpiMode`/`<ApplicationHighDpiMode>`, not `app.manifest` (see compiler warning `WFO0003`) |
-| .NET 10 | Dark mode moves past experimental; clipboard handling, accessibility, and designer improvements; new `ScreenCaptureMode` APIs; improved code analyzers |
+| .NET 10 | `SetColorMode` dark mode **still experimental** (`WFO5001`); clipboard handling, accessibility, and designer improvements; new `ScreenCaptureMode` APIs; improved code analyzers |
 | .NET 11 (preview) | Further dark-mode polish (e.g. `PropertyGrid`/`ProgressBar` default colors under Fluent theme) |
 
 Always check `https://learn.microsoft.com/en-us/dotnet/desktop/winforms/whats-new`
@@ -246,6 +280,24 @@ changed every release since .NET 7.
 - Touching a control from a `Task.Run`/`Thread` callback without checking
   `InvokeRequired` — works in a quick test, throws or corrupts state under
   real timing.
+- Wrapping a custom container's children in the parent designer's
+  `SuspendLayout()` … `ResumeLayout(false)` when those children use
+  `Dock`/`Anchor` and the container gets resized afterward — they never
+  re-layout and end up stuck at their initial bounds. See "The Control Tree
+  and the Designer".
+- Hand-setting `BackColor`/`ForeColor` (or a whole `ThemeService`) to fake
+  dark mode instead of `Application.SetColorMode` — the framework themes
+  standard controls for you on .NET 9+.
+- A custom-painted control whose drawing depends on its size (rounded fill,
+  gradient, size-relative layout in `OnPaint`) that does not
+  `SetStyle(ControlStyles.ResizeRedraw, true)` — on a grow, WinForms
+  invalidates only the newly exposed strip, so the previous size's paint
+  stays underneath. Symptom: stacked/ghosted edges when the control is
+  repeatedly resized (e.g. a chat bubble growing as text streams in).
+- Trying to screenshot a Direct2D / DirectWrite / child-HWND control with
+  `Control.DrawToBitmap` and getting a blank area — `DrawToBitmap` only
+  captures GDI/GDI+ `WM_PRINT` output. See the `winforms-render-capture`
+  skill for `PrintWindow` + `PW_RENDERFULLCONTENT`.
 - Setting high-DPI mode via `app.manifest` on .NET 9+ — use the project
   property or `Application.SetHighDpiMode` instead (manifest approach is
   deprecated, flagged by `WFO0003`).

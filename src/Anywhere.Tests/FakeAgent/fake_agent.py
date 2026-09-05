@@ -11,6 +11,7 @@ actually reads via `TextReader.ReadLine()`.
 
 import json
 import sys
+import time
 
 # acp-csharp's ClientSideConnection reads JSON-RPC messages via
 # TextReader.ReadLine(), so the agent must flush stdout after every newline.
@@ -49,6 +50,15 @@ while True:
         # NewSessionResponse requires a sessionId.
         send({"jsonrpc": "2.0", "id": msg_id, "result": {"sessionId": "fake-session-id"}})
     elif method == "session/prompt":
+        prompt_blocks = msg.get("params", {}).get("prompt", [])
+        prompt_text = "".join(b.get("text", "") for b in prompt_blocks)
+        if prompt_text == "slow":
+            # Used by the cancellation test: stall long enough for the client
+            # to cancel its CancellationToken before this reply is sent, so
+            # the client observes an OperationCanceledException rather than a
+            # race against a fast in-process response.
+            time.sleep(5)
+
         # Emit two streamed chunks ("fake agent " + "response") BEFORE the final
         # result, so AgentProcess.OnResponseChunk is actually exercised — a fake
         # agent that only ever sent the final response would let a non-streaming

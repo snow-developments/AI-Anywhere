@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Anywhere.Agents;
 using Anywhere.Models;
@@ -57,5 +58,19 @@ public class AgentProcessIntegrationTests {
     await process.SendPromptAsync("hello");
 
     Assert.Contains("fake agent ", chunks);
+  }
+
+  [Fact(Timeout = 30000)]
+  public async Task SendPromptAsync_throws_when_cancelled_mid_prompt() {
+    var profile = NewFakeProfile();
+
+    using var process = new AgentProcess(profile);
+    await process.StartAsync();
+
+    using var cts = new CancellationTokenSource();
+    var sendTask = process.SendPromptAsync("slow", cts.Token);
+    cts.Cancel();
+
+    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sendTask);
   }
 }

@@ -2,7 +2,13 @@
 
 ## Application
 
-- [ ] Ensure `Colors.Background` is the default background color in all `Form`s and that it is used as the BG color for form frames, i.e. forms with visible captions.
+- [ ] Ensure `Colors.Background` is the default background color in all `Form`s
+      and that it is used as the BG color for form frames, i.e. forms with
+      visible captions. Always use the app's current theme. For context, this
+      to-do task is referring to caption background colors in form non-client
+      areas.
+- [ ] Make light/dark theme user-configurable (override on top of the
+      OS-detected default from `ThemeService`).
 
 ## Branding
 

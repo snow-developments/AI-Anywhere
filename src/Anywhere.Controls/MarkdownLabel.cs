@@ -29,6 +29,21 @@ public class MarkdownLabel : Control {
   private float blockSpacing = 6;
   private AutoSizeMode autoSizeMode = AutoSizeMode.GrowOnly;
 
+  // Width used by the layout builders. During a measurement call the control
+  // may not be sized (or handled) yet, so measurement passes its own width in
+  // here; drawing falls back to the live Width.
+  private int? measureWidth;
+
+  // Widest laid-out block seen during the current measurement pass.
+  private float measuredWidth;
+
+  // DirectWrite only needs a factory to measure/lay out text — no window
+  // handle, no render target. Created lazily so GetPreferredHeight works before
+  // the handle exists; the render target (drawing only) is still built in
+  // OnHandleCreated.
+  private IDWriteFactory DwFactory => dwFactory ??= DWrite.DWriteCreateFactory<IDWriteFactory>();
+  private int LayoutWidth => measureWidth ?? Width;
+
   [NotNull]
   [Category("Appearance")]
   public override Drawing.Color BackColor {
@@ -106,7 +121,7 @@ public class MarkdownLabel : Control {
   protected override void OnHandleCreated(EventArgs e) {
     base.OnHandleCreated(e);
 
-    dwFactory = DWrite.DWriteCreateFactory<IDWriteFactory>();
+    _ = DwFactory;
     var d2dFactory = D2D1.D2D1CreateFactory<ID2D1Factory>();
     renderTarget = d2dFactory.CreateHwndRenderTarget(
       new RenderTargetProperties(),
@@ -133,22 +148,54 @@ public class MarkdownLabel : Control {
 
     float y = Padding.Top;
     foreach (var block in Markdown.Parse(Text)) {
-      y += RenderBlock(block, y);
+      y += RenderBlock(block, y, draw: true);
       y += BlockSpacing;
     }
 
     renderTarget.EndDraw();
   }
 
-  private float RenderBlock(Block block, float y) {
+  /// <summary>
+  /// Pixel size needed to render the current <see cref="Text"/> within
+  /// <paramref name="maxWidth"/>: <c>Width</c> is the widest laid-out line (up
+  /// to <paramref name="maxWidth"/>), <c>Height</c> the total. Pure measurement
+  /// — needs no window handle or render target, so callers can size the control
+  /// before it is shown.
+  /// </summary>
+  public Drawing.Size MeasureContent(int maxWidth) {
+    if (maxWidth <= 0 || string.IsNullOrEmpty(Text)) return Drawing.Size.Empty;
+
+    measureWidth = maxWidth;
+    measuredWidth = 0;
+    try {
+      float y = Padding.Top;
+      bool any = false;
+      foreach (var block in Markdown.Parse(Text)) {
+        y += RenderBlock(block, y, draw: false);
+        y += BlockSpacing;
+        any = true;
+      }
+      if (any) y -= BlockSpacing; // spacing goes *between* blocks, not after the last
+      return new Drawing.Size(
+        Math.Min(maxWidth, (int)Math.Ceiling(measuredWidth) + Padding.Left + Padding.Right),
+        (int)Math.Ceiling(y + Padding.Bottom));
+    } finally {
+      measureWidth = null;
+    }
+  }
+
+  /// <summary>Pixel height needed to render the current <see cref="Text"/> at <paramref name="width"/>.</summary>
+  public int GetPreferredHeight(int width) => MeasureContent(width).Height;
+
+  private float RenderBlock(Block block, float y, bool draw) {
     var size = Font.SizeInDips();
 
     if (block is HeadingBlock heading) {
       // FIXME: Use a configurable property for heading font sizes, `HeadingSizes`
       float HeadingFontSize = heading.Level switch { 1 => 22, 2 => 18, 3 => 16, _ => 14 };
-      return RenderInlines(heading.Inline, y, HeadingFontSize, isBold: true);
+      return RenderInlines(heading.Inline, y, HeadingFontSize, isBold: true, draw: draw);
     } else if (block is ParagraphBlock para) {
-      return RenderInlines(para.Inline, y, size, isBold: false);
+      return RenderInlines(para.Inline, y, size, isBold: false, draw: draw);
     } else if (block is ListBlock list) {
       float total = 0;
       int index = 1;
@@ -156,13 +203,14 @@ public class MarkdownLabel : Control {
         string bullet = list.IsOrdered ? $"{index++}." : "•";
         // render bullet
         using var bulletLayout = CreateLayout($"{bullet} ", size, false, false);
-        renderTarget!.DrawTextLayout(new Vector2(Padding.Left + 4, y + total), bulletLayout, brush!);
+        if (draw)
+          renderTarget!.DrawTextLayout(new Vector2(Padding.Left + 4, y + total), bulletLayout, brush!);
         float bulletW = bulletLayout.Metrics.Width;
 
         // render item inlines indented
         if (item is ListItemBlock listItem) foreach (var child in listItem)
           if (child is ParagraphBlock p)
-            total += RenderInlines(p.Inline, y + total, size, isBold: false, indent: bulletW + Padding.Left + 8);
+            total += RenderInlines(p.Inline, y + total, size, isBold: false, draw: draw, indent: bulletW + Padding.Left + 8);
 
         total += 2;
       }
@@ -173,7 +221,7 @@ public class MarkdownLabel : Control {
   }
 
   private float RenderInlines(
-    ContainerInline? inlines, float y, float fontSize, bool isBold, float indent = 4
+    ContainerInline? inlines, float y, float fontSize, bool isBold, bool draw, float indent = 0
   ) {
     if (inlines == null) return 0;
 
@@ -186,20 +234,17 @@ public class MarkdownLabel : Control {
     foreach (var r in runs) sb.Append(r.text);
     string fullText = sb.ToString();
 
-    var maxHeight = Height - y - Padding.Bottom;
     using var layout = CreateLayout(
       fullText,
       Font.SizeInDips(),
       indent: indent,
-      format: dwFactory!.CreateTextFormat(
+      format: DwFactory.CreateTextFormat(
         Font.Name, isBold ? FontWeight.Bold : FontWeight.Normal,
         FontStyle.Normal,
         FontStretch.Normal,
         fontSize
       )
     );
-    if (AutoSize && maxHeight < layout.Metrics.LayoutHeight)
-      Height += Convert.ToInt32(Math.Round(layout.MaxHeight, 0, MidpointRounding.AwayFromZero));
 
     // Apply per-run formatting
     uint pos = 0;
@@ -211,7 +256,11 @@ public class MarkdownLabel : Control {
       pos += length;
     }
 
-    renderTarget!.DrawTextLayout(new Vector2(indent, y), layout, brush!);
+    if (draw) {
+      renderTarget!.DrawTextLayout(new Vector2(indent, y), layout, brush!);
+    } else {
+      measuredWidth = Math.Max(measuredWidth, indent + layout.Metrics.Width);
+    }
     return layout.Metrics.Height;
   }
 
@@ -220,17 +269,17 @@ public class MarkdownLabel : Control {
     bool bold = false, bool italic = false, float indent = 0,
     IDWriteTextFormat? format = null
   ) {
-    return dwFactory!.CreateGdiCompatibleTextLayout(
+    return DwFactory.CreateGdiCompatibleTextLayout(
       text,
       Convert.ToUInt32(text.Length),
-      format ?? dwFactory.CreateTextFormat(
+      format ?? DwFactory.CreateTextFormat(
         Font.Name,
         bold ? FontWeight.Bold : FontWeight.Normal,
         italic ? FontStyle.Italic : FontStyle.Normal,
         FontStretch.Normal,
         size
       ),
-      Width - indent - Padding.Right,
+      LayoutWidth - indent - Padding.Right,
       float.MaxValue,
       transform: null,
       pixelsPerDip: 1.0f,
@@ -257,8 +306,11 @@ public class MarkdownLabel : Control {
 
   protected override void OnHandleDestroyed(EventArgs e) {
     brush?.Dispose();
+    brush = null;
     renderTarget?.Dispose();
+    renderTarget = null;
     dwFactory?.Dispose();
+    dwFactory = null;
     base.OnHandleDestroyed(e);
   }
 }

@@ -92,7 +92,7 @@ public sealed class AgentProcess : IDisposable {
     sessionId = sessionResult.SessionId;
   }
 
-  public async Task<PromptResult> SendPromptAsync(string text) {
+  public async Task<PromptResult> SendPromptAsync(string text, CancellationToken cancellationToken = default) {
     if (connection is null || sessionId is null) {
       throw new InvalidOperationException("StartAsync must complete before SendPromptAsync.");
     }
@@ -104,7 +104,16 @@ public sealed class AgentProcess : IDisposable {
       Prompt = [new TextContentBlock { Text = text }],
     };
 
-    await connection.PromptAsync(promptRequest);
+    // ClientSideConnection.PromptAsync's cancellationToken doesn't actually
+    // abort the wait for the agent's response (confirmed via a failing test:
+    // the awaited call still completed after the fake agent's artificial
+    // delay even after the token was cancelled) — it only affects request
+    // dispatch, not the in-flight wait. So the host-visible "Cancelled."
+    // behavior is implemented here instead: stop waiting on our end and
+    // surface OperationCanceledException, without waiting for (or expecting)
+    // the agent to actually halt its turn server-side.
+    await connection.PromptAsync(promptRequest, cancellationToken).AsTask()
+      .WaitAsync(cancellationToken);
 
     return new PromptResult(adapter.EndTurnText());
   }

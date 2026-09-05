@@ -7,7 +7,9 @@ namespace Anywhere;
 /// <summary>
 /// App-shell window shown at startup. Borderless; offers a "New conversation"
 /// button and a list of recent conversations. Owns the lifetime of
-/// <see cref="ConversationForm"/> windows opened from it.
+/// <see cref="ChatForm"/> windows opened from it. Closing the window
+/// hides it to the tray rather than exiting the app; the user exits via the
+/// tray icon's Exit menu item.
 /// </summary>
 public partial class SplashForm : Form {
   internal SplashForm() {
@@ -63,18 +65,25 @@ public partial class SplashForm : Form {
   }
 
   /// <summary>
-  /// Opens a <see cref="ConversationForm"/> for the given session, or for a
+  /// Opens a <see cref="ChatForm"/> for the given session, or for a
   /// brand-new session if <paramref name="sessionId"/> is null.
   /// </summary>
   // FIXME: `sessionId` is unused
   internal void OpenConversation(int? sessionId) {
-    var form = new ConversationForm { Owner = this };
+    var form = new ChatForm { Owner = this };
     form.Show();
     Hide();
   }
 
   protected override void OnFormClosing(FormClosingEventArgs e) {
-    base.OnFormClosing(e);
-    Application.Exit();
+    // Closing the splash only hides it — the app stays alive in the tray so
+    // the user can bring the window back. Real shutdown goes through the
+    // tray icon's Exit menu item, which calls Application.Exit().
+    if (e.CloseReason == CloseReason.ApplicationExitCall) {
+      base.OnFormClosing(e);
+      return;
+    }
+    Hide();
+    e.Cancel = true;
   }
 }

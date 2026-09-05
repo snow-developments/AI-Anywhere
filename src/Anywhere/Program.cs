@@ -13,7 +13,14 @@ internal static class Program {
     // To customize application configuration such as set high DPI settings or default font,
     // see https://aka.ms/applicationconfiguration.
     ApplicationConfiguration.Initialize();
-    Application.Run(new SplashForm());
+    // Follow the OS light/dark preference using WinForms' built-in color mode.
+#pragma warning disable WFO5001 // Application.SetColorMode is experimental (dark mode).
+    Application.SetColorMode(SystemColorMode.System);
+#pragma warning restore WFO5001
+
+    var splash = new SplashForm();
+    using var tray = new TrayIcon(splash);
+    Application.Run(splash);
   }
 
   private static void HandleException(Exception? e) {

@@ -1,8 +1,8 @@
 # Constraints (from the spec/plan — do not violate silently)
 
-Inviolable project rules. Each one has a source — a spec line, a plan section,
-a review finding — but the rule itself stands without the source. Violating
-one of these silently is a bug.
+Inviolable project rules. Each one has a source — a spec line, a plan section, a
+review finding — but the rule itself stands without the source. Violating one of
+these silently is a bug.
 
 - Dependency direction `Anywhere` → `Anywhere.Controls` → `Anywhere.Design`, and
   `Anywhere` → `Anywhere.Models`, is one-way. `Anywhere.Design` and

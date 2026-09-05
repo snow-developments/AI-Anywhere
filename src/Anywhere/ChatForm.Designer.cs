@@ -1,6 +1,6 @@
-﻿namespace Anywhere;
+namespace Anywhere;
 
-partial class ConversationForm {
+partial class ChatForm {
   /// <summary>
   ///  Required designer variable.
   /// </summary>
@@ -8,8 +8,7 @@ partial class ConversationForm {
 
   private Anywhere.Controls.ChatTranscriptPanel transcript;
   private Anywhere.Controls.PermissionDiffPanel permissionPanel;
-  private System.Windows.Forms.Panel inputPanel;
-  private System.Windows.Forms.TextBox inputBox;
+  private Anywhere.Controls.ChatInputPanel inputPanel;
 
   /// <summary>
   ///  Clean up any resources being used.
@@ -31,18 +30,10 @@ partial class ConversationForm {
     components = new System.ComponentModel.Container();
     transcript = new Anywhere.Controls.ChatTranscriptPanel();
     permissionPanel = new Anywhere.Controls.PermissionDiffPanel();
-    inputPanel = new System.Windows.Forms.Panel();
-    inputBox = new System.Windows.Forms.TextBox();
+    inputPanel = new Anywhere.Controls.ChatInputPanel();
 
-    inputPanel.SuspendLayout();
-
-    inputBox.Dock = System.Windows.Forms.DockStyle.Fill;
-    inputBox.Margin = new System.Windows.Forms.Padding(Anywhere.Design.Spacing.Small);
-
-    inputPanel.Controls.Add(inputBox);
     inputPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-    inputPanel.Height = 32;
-    inputPanel.Padding = new System.Windows.Forms.Padding(Anywhere.Design.Spacing.Small);
+    inputPanel.Height = 72;
 
     Controls.Add(transcript);
     Controls.Add(permissionPanel);
@@ -53,8 +44,6 @@ partial class ConversationForm {
     // FIXME: Regression: App icon is missing
     StartPosition = FormStartPosition.CenterScreen;
     Text = "Conversation";
-
-    inputPanel.ResumeLayout(false);
   }
 
   #endregion
