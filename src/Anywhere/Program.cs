@@ -1,4 +1,4 @@
-namespace Anywhere;
+﻿namespace Anywhere;
 
 internal static class Program {
   /// <summary>

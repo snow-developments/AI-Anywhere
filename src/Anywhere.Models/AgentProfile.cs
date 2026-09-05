@@ -1,4 +1,4 @@
-namespace Anywhere.Models;
+﻿namespace Anywhere.Models;
 
 public sealed class AgentProfile {
   public int Id { get; set; }

@@ -1,3 +1,3 @@
-namespace Anywhere.Controls;
+﻿namespace Anywhere.Controls;
 
 public enum PermissionOutcome { Allow, AllowAlways, Deny }

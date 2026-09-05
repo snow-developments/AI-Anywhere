@@ -1,4 +1,4 @@
-namespace Anywhere.Design;
+﻿namespace Anywhere.Design;
 
 public static class Spacing {
   public const int Tiny = 4;

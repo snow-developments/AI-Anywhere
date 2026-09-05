@@ -1,4 +1,4 @@
-namespace Anywhere.Models;
+﻿namespace Anywhere.Models;
 
 public sealed class Message {
   public int Id { get; set; }

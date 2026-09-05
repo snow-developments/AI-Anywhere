@@ -1,4 +1,4 @@
-namespace Anywhere.Controls;
+﻿namespace Anywhere.Controls;
 
 public record PermissionRequest(
   string RequestId,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -7,18 +7,18 @@ using Anywhere.Persistence;
 using Xunit;
 
 public class MessageRepositoryTests : IDisposable {
-  private readonly string _dbPath;
-  private readonly AnywhereDbContext _db;
+  private readonly string dbPath;
+  private readonly AnywhereDbContext db;
 
   public MessageRepositoryTests() {
-    _dbPath = Path.Combine(Path.GetTempPath(), $"acp_test_{Guid.NewGuid():N}.db");
-    _db = new AnywhereDbContext(_dbPath);
-    _db.Database.EnsureCreated();
+    dbPath = Path.Combine(Path.GetTempPath(), $"acp_test_{Guid.NewGuid():N}.db");
+    db = new AnywhereDbContext(dbPath);
+    db.Database.EnsureCreated();
   }
 
   [Fact]
   public async Task Messages_persist_and_list_in_insertion_order() {
-    ProfileRepository profiles = new ProfileRepository(_db);
+    ProfileRepository profiles = new ProfileRepository(db);
     int profileId = await profiles.InsertAsync(new AgentProfile {
       Name = "Test Agent",
       Command = "echo",
@@ -27,10 +27,10 @@ public class MessageRepositoryTests : IDisposable {
       WorkingDir = @"C:\work",
     });
 
-    SessionRepository sessions = new SessionRepository(_db);
+    SessionRepository sessions = new SessionRepository(db);
     int sessionId = await sessions.InsertAsync(profileId, @"C:\work");
 
-    MessageRepository messages = new MessageRepository(_db);
+    MessageRepository messages = new MessageRepository(db);
     await messages.InsertAsync(sessionId, "user", "hello", null);
     await messages.InsertAsync(sessionId, "agent", "hi there", null);
 
@@ -43,8 +43,8 @@ public class MessageRepositoryTests : IDisposable {
   }
 
   public void Dispose() {
-    _db.Dispose();
+    db.Dispose();
     Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-    File.Delete(_dbPath);
+    File.Delete(dbPath);
   }
 }

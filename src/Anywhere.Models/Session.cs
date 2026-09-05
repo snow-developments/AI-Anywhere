@@ -1,4 +1,4 @@
-namespace Anywhere.Models;
+﻿namespace Anywhere.Models;
 
 public sealed class Session {
   public int Id { get; set; }

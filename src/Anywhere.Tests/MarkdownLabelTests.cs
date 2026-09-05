@@ -1,4 +1,4 @@
-using Anywhere.Controls;
+﻿using Anywhere.Controls;
 using Xunit;
 
 public class MarkdownLabelTests {

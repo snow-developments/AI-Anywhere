@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
@@ -243,14 +243,15 @@ public class MarkdownLabel : Control {
       List<(string, bool, bool)> runs,
       bool bold, bool italic) {
     foreach (var inline in inlines) {
-      if (inline is LiteralInline lit)
+      if (inline is LiteralInline lit) {
         runs.Add((lit.Content.ToString(), bold, italic));
-      else if (inline is EmphasisInline em) {
+      } else if (inline is EmphasisInline em) {
         bool b = bold || em.DelimiterCount == 2;
         bool i = italic || em.DelimiterCount == 1;
         CollectRuns(em, runs, b, i);
-      } else if (inline is CodeInline code)
+      } else if (inline is CodeInline code) {
         runs.Add((code.Content, false, false)); // could set monospace here
+      }
     }
   }
 

@@ -63,8 +63,18 @@ Project-wide inviolable rules live in [`docs/Constraints.md`](docs/Constraints.m
 Read them once before touching code; refer back when a plan or skill suggests
 breaking one. This section is a pointer, not a copy.
 
+## Style
+
+C# naming/formatting conventions for this repo live in
+[`.agents/guidance/Style Guide.md`](.agents/guidance/Style%20Guide.md). Read it
+before writing or renaming any `.cs` symbol.
+
 ## Rules
 
+- **No SDD Workflow.** Do not use the `subagent-driven-development` skill in
+  this repo — it's too verbose (ledgers, per-task subagent dispatch, review
+  packages) for this project's scale. Use `executing-plans` (or just implement
+  directly) for plan execution instead.
 - **Git Commits Are the User's Job.** Agents must NEVER create commits, amend,
   rebase, run `git reset` / `git stash`, or otherwise mutate git history on the
   user's behalf. Leave changes staged or unstaged, summarize what is staged,

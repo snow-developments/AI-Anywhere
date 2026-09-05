@@ -1,3 +1,3 @@
-namespace Anywhere.Agents;
+﻿namespace Anywhere.Agents;
 
 public record PromptResult(string Content);

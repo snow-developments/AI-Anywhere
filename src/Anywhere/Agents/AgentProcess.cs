@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -30,27 +30,27 @@ namespace Anywhere.Agents;
 /// Per spec, there is no timeout — the panel waits indefinitely.
 /// </remarks>
 public sealed class AgentProcess : IDisposable {
-  private readonly AgentProfile _profile;
-  private Process? _process;
-  private ClientSideConnection? _connection;
-  private string? _sessionId;
-  private readonly AcpClientAdapter _adapter;
-  private long _nextRequestId;
+  private readonly AgentProfile profile;
+  private Process? process;
+  private ClientSideConnection? connection;
+  private string? sessionId;
+  private readonly AcpClientAdapter adapter;
+  private long nextRequestId;
 
   public event Action<string>? OnResponseChunk;
   public event Action<PermissionRequest>? OnPermissionRequested;
   public event Action<string>? OnAgentExited;
 
   public AgentProcess(AgentProfile profile) {
-    _profile = profile;
-    _adapter = new AcpClientAdapter(this);
+    this.profile = profile;
+    adapter = new AcpClientAdapter(this);
   }
 
   public async Task StartAsync() {
-    _process = new Process {
+    process = new Process {
       StartInfo = new ProcessStartInfo {
-        FileName = _profile.Command,
-        WorkingDirectory = _profile.WorkingDir,
+        FileName = profile.Command,
+        WorkingDirectory = profile.WorkingDir,
         UseShellExecute = false,
         CreateNoWindow = true,
         RedirectStandardOutput = true,
@@ -58,24 +58,24 @@ public sealed class AgentProcess : IDisposable {
         RedirectStandardError = true,
       },
     };
-    foreach (var arg in _profile.Args) _process.StartInfo.ArgumentList.Add(arg);
-    foreach (var (key, value) in _profile.Env) {
-      _process.StartInfo.Environment[key] = value;
+    foreach (var arg in profile.Args) process.StartInfo.ArgumentList.Add(arg);
+    foreach (var (key, value) in profile.Env) {
+      process.StartInfo.Environment[key] = value;
     }
-    if (!_process.Start()) {
+    if (!process.Start()) {
       throw new InvalidOperationException("Failed to start agent process.");
     }
-    _process.EnableRaisingEvents = true;
-    _process.Exited += (_, _) => OnAgentExited?.Invoke(
-      $"exit code {_process.ExitCode}");
+    process.EnableRaisingEvents = true;
+    process.Exited += (_, _) => OnAgentExited?.Invoke(
+      $"exit code {process.ExitCode}");
 
-    _connection = new ClientSideConnection(
-      _ => _adapter,
-      _process.StandardOutput,
-      _process.StandardInput);
-    _connection.Open();
+    connection = new ClientSideConnection(
+      _ => adapter,
+      process.StandardOutput,
+      process.StandardInput);
+    connection.Open();
 
-    var initResult = await _connection.InitializeAsync(new InitializeRequest {
+    var initResult = await connection.InitializeAsync(new InitializeRequest {
       ProtocolVersion = 1,
       ClientCapabilities = new ClientCapabilities(),
     });
@@ -85,74 +85,74 @@ public sealed class AgentProcess : IDisposable {
         $"Unsupported protocol version: {initResult.ProtocolVersion}");
     }
 
-    var sessionResult = await _connection.NewSessionAsync(new NewSessionRequest {
-      Cwd = _profile.WorkingDir,
+    var sessionResult = await connection.NewSessionAsync(new NewSessionRequest {
+      Cwd = profile.WorkingDir,
       McpServers = [],
     });
-    _sessionId = sessionResult.SessionId;
+    sessionId = sessionResult.SessionId;
   }
 
   public async Task<PromptResult> SendPromptAsync(string text) {
-    if (_connection is null || _sessionId is null) {
+    if (connection is null || sessionId is null) {
       throw new InvalidOperationException("StartAsync must complete before SendPromptAsync.");
     }
 
-    _adapter.BeginTurn();
+    adapter.BeginTurn();
 
     var promptRequest = new PromptRequest {
-      SessionId = _sessionId,
+      SessionId = sessionId,
       Prompt = [new TextContentBlock { Text = text }],
     };
 
-    await _connection.PromptAsync(promptRequest);
+    await connection.PromptAsync(promptRequest);
 
-    return new PromptResult(_adapter.EndTurnText());
+    return new PromptResult(adapter.EndTurnText());
   }
 
   public Task RespondToPermissionAsync(string requestId, PermissionOutcome outcome) {
-    _adapter.ResolvePermission(requestId, outcome);
+    adapter.ResolvePermission(requestId, outcome);
     return Task.CompletedTask;
   }
 
   public void Dispose() {
-    _connection?.Dispose();
-    if (_process is not null && !_process.HasExited) {
+    connection?.Dispose();
+    if (process is not null && !process.HasExited) {
       try {
-        _process.Kill(entireProcessTree: true);
-        _process.WaitForExit(2000);
+        process.Kill(entireProcessTree: true);
+        process.WaitForExit(2000);
       } catch {
         // best-effort cleanup; the process may already be exiting on its own
       }
     }
-    _process?.Dispose();
+    process?.Dispose();
   }
 
   // ---- Adapter: implements IAcpClient so acp-csharp can call back into us ----
 
   private sealed class AcpClientAdapter : IAcpClient {
-    private readonly AgentProcess _owner;
-    private readonly StringBuilder _turnBuffer = new();
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<PermissionOutcome>> _permissionWaiters = new();
+    private readonly AgentProcess owner;
+    private readonly StringBuilder turnBuffer = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<PermissionOutcome>> permissionWaiters = new();
 
-    internal AcpClientAdapter(AgentProcess owner) => _owner = owner;
+    internal AcpClientAdapter(AgentProcess owner) => this.owner = owner;
 
     internal void BeginTurn() {
       // Discard any leftover text from a prior turn — chunks accumulate into
-      // _turnBuffer until EndTurnText reads it out.
-      _turnBuffer.Clear();
+      // turnBuffer until EndTurnText reads it out.
+      turnBuffer.Clear();
     }
 
-    internal string EndTurnText() => _turnBuffer.ToString();
+    internal string EndTurnText() => turnBuffer.ToString();
 
     internal void ResolvePermission(string requestId, PermissionOutcome outcome) {
-      if (_permissionWaiters.TryRemove(requestId, out var tcs)) {
+      if (permissionWaiters.TryRemove(requestId, out var tcs)) {
         tcs.TrySetResult(outcome);
       }
     }
 
     public ValueTask<RequestPermissionResponse> RequestPermissionAsync(
         RequestPermissionRequest request, CancellationToken cancellationToken = default) {
-      var requestId = Interlocked.Increment(ref _owner._nextRequestId).ToString();
+      var requestId = Interlocked.Increment(ref owner.nextRequestId).ToString();
       var toolCallElement = (JsonElement)request.ToolCall;
       var toolName = TryGetString(toolCallElement, "title")
                      ?? TryGetString(toolCallElement, "name")
@@ -162,9 +162,9 @@ public sealed class AgentProcess : IDisposable {
                         ?? toolName;
 
       var tcs = new TaskCompletionSource<PermissionOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
-      _permissionWaiters[requestId] = tcs;
+      permissionWaiters[requestId] = tcs;
 
-      _owner.OnPermissionRequested?.Invoke(new PermissionRequest(
+      owner.OnPermissionRequested?.Invoke(new PermissionRequest(
         RequestId: requestId,
         ToolName: toolName,
         Description: description,
@@ -208,8 +208,8 @@ public sealed class AgentProcess : IDisposable {
         SessionNotification notification, CancellationToken cancellationToken = default) {
       if (notification.Update is AgentMessageChunkSessionUpdate chunk
           && chunk.Content is TextContentBlock text) {
-        _turnBuffer.Append(text.Text);
-        _owner.OnResponseChunk?.Invoke(text.Text);
+        turnBuffer.Append(text.Text);
+        owner.OnResponseChunk?.Invoke(text.Text);
       }
       return default;
     }

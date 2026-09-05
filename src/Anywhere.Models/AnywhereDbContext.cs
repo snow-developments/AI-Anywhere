@@ -1,12 +1,12 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace Anywhere.Models;
 
 public sealed class AnywhereDbContext : DbContext {
-  private readonly string _dbPath;
+  private readonly string dbPath;
 
-  public AnywhereDbContext(string dbPath) => _dbPath = dbPath;
+  public AnywhereDbContext(string dbPath) => this.dbPath = dbPath;
 
   public DbSet<AgentProfile> Profiles => Set<AgentProfile>();
   public DbSet<Session> Sessions => Set<Session>();
@@ -21,7 +21,7 @@ public sealed class AnywhereDbContext : DbContext {
   }
 
   protected override void OnConfiguring(DbContextOptionsBuilder options)
-      => options.UseSqlite($"Data Source={_dbPath}");
+      => options.UseSqlite($"Data Source={dbPath}");
 
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
     modelBuilder.Entity<AgentProfile>()
