@@ -1,0 +1,36 @@
+# Normalize line endings to CRLF for text files, matching .editorconfig's end_of_line = crlf.
+# See .agents/guidance/Style Guide.md for the style rules this backs.
+
+* text=auto eol=crlf
+
+# Explicit text types (belt-and-suspenders alongside the auto-detect above)
+*.cs      text eol=crlf
+*.csx     text eol=crlf
+*.csproj  text eol=crlf
+*.sln     text eol=crlf
+*.md      text eol=crlf
+*.json    text eol=crlf
+*.yml     text eol=crlf
+*.yaml    text eol=crlf
+*.xml     text eol=crlf
+*.config  text eol=crlf
+*.editorconfig text eol=crlf
+*.gitattributes text eol=crlf
+*.gitignore text eol=crlf
+
+# Python fake-agent test script keeps LF: it runs under a POSIX-style stdio
+# protocol and CRLF line endings inside a Python heredoc/script body outside
+# of Windows-native tooling is a common source of subtle failures.
+*.py      text eol=lf
+
+# Binary/opaque formats; never touched by line-ending normalization
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.dll     binary
+*.exe     binary
+*.pdb     binary
+*.db      binary
+*.snk     binary
