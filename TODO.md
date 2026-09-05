@@ -10,6 +10,10 @@
 - [ ] Make light/dark theme user-configurable (force Light/Dark over the
       OS-detected default). Plan:
       `docs/superpowers/plans/2026-09-05-theme-override.md`.
+- [ ] Bug: Markdown hyperlinks are not rendered in chat bubbles. Inline links
+      (`[text](url)`) should render as blue, clickable text with the usual
+      link affordances (pointer cursor, hover state, opens in the default
+      browser) in `MarkdownLabel` / `ChatTranscriptPanel`.
 
 ## Branding
 
