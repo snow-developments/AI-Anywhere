@@ -30,21 +30,21 @@ agent profile. No fork or rebuild required to point it at a different agent.
   markdown.
 - **🔐 Inline permissions, keeping you in flow.** When the agent asks for
   permission (`session/request_permission`), it appears as a docked panel right
-  above the input box, so the chat, the diff, and the approval controls stay
-  in one view. Allow once, allow always, or deny, without losing context or
-  digging through modal dialogs.
-- **📝 Diffs where they belong.** If the pending permission is for a file write or
+  above the input box, so the chat, the diff, and the approval controls stay in
+  one view. Allow once, allow always, or deny, without losing context or digging
+  through modal dialogs.
+- **📝 Diffs always in reach.** If the pending permission is for a file write or
   edit, the panel renders the diff right there, old vs. new, colored line by
   line.
 - **💾 Nothing disappears on restart.** Chat history and agent profiles are
   persisted to a local SQLite database.
-- **🚨 Crashes are visible, not silent.** If the agent subprocess dies, you get a
-  system message and a restart button. Malformed JSON-RPC traffic goes to a
+- **🚨 Crashes are visible, not silent.** If the agent subprocess dies, you get
+  a system message and a restart button. Malformed JSON-RPC traffic goes to a
   debug log instead of vanishing.
 
 ## What it _deliberately_ doesn't do, yet...
 
-This is a v1 scoped to daily power-user needs, not a feature-complete editor
+Version 1 is scoped to daily power-user needs, not a feature-complete editor
 plugin replacement:
 
 - No named presets for specific agents (Claude Code, Zed, Antigravity,
@@ -67,7 +67,7 @@ plugin replacement:
 - **Persistence:** SQLite via EF Core, schema managed by EF Core Migrations,
   stored under the local (non-roaming) `%APPDATA%\Anywhere\`
 
-## Project Layout
+## Project Structure
 
 Four projects, dependencies flow one way:
 
@@ -86,8 +86,8 @@ Anywhere  ->  Anywhere.Models
   agent registry backed by concrete repository classes over `AnywhereDbContext`,
   and the `MainForm` UI that ties it together.
 
-See [AGENTS.md](AGENTS.md) for the full architecture writeup and build/test
-commands, and
+See [docs/Architecture.md](docs/Architecture.md) for the architecture writeup,
+[AGENTS.md](AGENTS.md) for build/test commands, and
 [docs/superpowers/specs/Design.md](docs/superpowers/specs/Design.md) for the
 original design spec.
 
