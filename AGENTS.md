@@ -122,7 +122,39 @@ actually materializes.
 
 Always use `gh api` to query GitHub (issues, PRs, file contents, etc.) rather
 than guessing at URLs or answering from memory — GitHub's data changes and only
-a live query is authoritative.
+a live query is authoritative. **Do not** fetch `api.github.com`/`raw.githubusercontent.com`
+URLs directly via the `fetch` tool or `curl`; that violates this rule. Use
+`gh api repos/<owner>/<repo>/contents/<path>` (add `?ref=<branch>` when needed)
+for directory listings and file contents, and `gh api repos/<owner>/<repo>/readme`
+for the rendered README. The agent-instruction note "GitHub Queries" was
+strengthened on 2026-09-05 after a Phase 2 implementation session silently used
+the `fetch` tool against `api.github.com` instead of `gh api` — don't repeat
+that.
+
+## Git Commit Messages
+
+Follow the `git-guidance` skill on every commit. Concretely, every commit
+message in this repository must satisfy all of:
+
+- **Subject line** begins with a descriptive present-tense verb, contains no
+  period, and never references agentic plans/tasks/phases/steps. Describe the
+  actual code change, not the planning artifact that prompted it
+- **Body bullets** (when present) use GitHub Flavored Markdown, contain no
+  trailing periods, and wrap named code constructs in backticks
+- **`💅`** prefixes a bullet only when it is strictly non-functional
+  (formatting, comments, naming polish, docs wording with no behavior change)
+- **`📚`** prefixes a bullet only when it touches documentation files with no
+  source behavior change; never combine `💅` and `📚` on the same bullet
+- **Subject stays concise**; add a body only when an adequate summary would
+  not fit as a single line
+
+Examples of the rule in practice are in the `git-guidance` skill and in the
+"Implementation Notes" section of
+`docs/superpowers/plans/2026-09-05-phase-2-protocol-and-controls.md`, which
+describes the `acp-csharp` and `MarkdownLabel` work that was actually committed
+under subjects like `` Add `AgentProcess` over `acp-csharp` `` — no
+plan-phase language, just the code change. Future commits should match that
+style.
 
 ## Other Resources
 

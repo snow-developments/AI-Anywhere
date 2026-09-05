@@ -534,3 +534,86 @@ git commit -m "feat: apply WinForms.Fluent.UI visual styling"
   `ProfileRepository.InsertAsync(AgentProfile)`/`ListAllAsync()` (Task 9) still
   match the signatures defined in Phase 1 (Task 2) and Phase 2 (Task 5) exactly
   — no renamed methods.
+
+## Implementation Notes (2026-09-05)
+
+Notes from the upstream work this plan builds on (Phases 1–3) that affect
+exact code-block shape, plus gotchas worth recording before this plan runs.
+
+- **`Typography.Monospace` is a *method*, not a property.** The Task 8 Step 2
+  code block uses `Font = Typography.Monospace` — that won't compile because
+  the actual definition in `src/Anywhere.Design/Typography.cs` is
+  `public static Font Monospace() => new("Cascadia Mono", 9f)`. Change the
+  example to `Font = Typography.Monospace()`. Same fix applies wherever
+  `Typography.Body` would be used.
+- **`OnProtocolWarning` cannot simply hook the library's read-loop
+  try/catch.** The `acp-csharp` `JsonRpcEndpoint.ReadMessagesAsync` swallows
+  parse exceptions internally and routes them to its `errorWriteFunc`
+  callback (which `ClientSideConnection` wires to a no-op). `AgentProcess`
+  has no direct visibility into malformed messages from the upstream code
+  alone. Three options, ordered by recommendation:
+  1. **Hook stderr.** `Process.StandardError` is already redirected in
+     `AgentProcess.StartAsync` but never read. Read it asynchronously and
+     raise `OnProtocolWarning(exitCode, stderrLine)` for each non-empty
+     line. This surfaces both the agent's own stderr (which is usually the
+     interesting one) and any future `errorWriteFunc` plumbing from the
+     library.
+  2. **Wire a custom `errorWriteFunc` into `ClientSideConnection`** — that
+     constructor only exposes `reader`/`writer`; the internal
+     `JsonRpcEndpoint` is constructed with a third `errorWriteFunc`
+     parameter the wrapper doesn't expose. Without forking the library this
+     path is closed; don't try it.
+  3. **Skip `OnProtocolWarning` for v1 and rely on `OnAgentExited` only.**
+     Add the event for parity but never raise it. Simpler; loses the
+     "malformed message" warning but keeps the restart path. Acceptable if
+     the debug log ends up empty during normal operation — which it usually
+     will, since real agents don't emit malformed JSON.
+- **`ProfileRepository.UpdateAsync(profile)` works with an
+  `AsNoTracking()`-loaded entity.** `GetAsync` returns a detached
+  `AgentProfile` because it uses `AsNoTracking()`. `Update(profile)` on a
+  detached instance with its `Id` set is a valid EF Core pattern and
+  round-trips the JSON-serialized `Args` / `Env` properties unchanged —
+  those are mapped via `HasConversion(... JsonSerializer.Serialize ...)` in
+  `AnywhereDbContext.OnModelCreating`. No extra plumbing required; just
+  keep `Id` populated on the entity passed to `UpdateAsync`.
+- **`AgentProfileForm`'s `Args` field is free text** — wrap
+  `AgentProfileParser.ParseArgs` (Task 9 Steps 5–8) around the value going
+  into `Args`, and around the value coming out when populating the
+  `TextBox` (join with `", "` so the user sees a re-editable string).
+  Without round-tripping, editing an existing profile that has spaces in
+  args (`"--port 4000"`) corrupts the saved profile.
+- **`AgentProfileForm`'s `Env` field** isn't in this plan; the spec is
+  silent on UI for env vars, and the `Dictionary<string, string>` on
+  `AgentProfile` is fine to leave unexposed for v1. Don't add it as a
+  free-text `TextBox` — newline-separated `KEY=VALUE` would silently drop
+  malformed entries with no UI feedback.
+- **`OnAgentExited` was wired in `AgentProcess.Dispose` to the
+  `Process.Exited` event** during Phase 2's implementation — the handler
+  fires with `"exit code {N}"`. The Task 8 Step 3 code expects a bare
+  `OnAgentExited` callback (no argument). Replace the signature with
+  `event Action<string>? OnAgentExited` in this plan's interfaces
+  summary if it isn't already — the Phase 2 implementation actually uses
+  `Action<string>` carrying the exit-code message; the original Phase 2
+  plan documented it as `Action<string>` as well, so no rename is
+  required.
+- **`AnywhereDbContext.DefaultDbPath()` already exists** from Phase 1, and
+  is the canonical path. Phase 4's `MainForm` startup logic should reuse
+  it (do not invent a second path).
+- **`WinForms.Fluent.UI` package id and API are not yet verified.**
+  Task 10 Step 1 / Step 2 ask the implementer to verify them — keep that
+  gate. As of Phase 2 the package was never installed (no usage in the
+  built codebase), so the implementer is starting from a clean slate for
+  this package, not from an existing reference.
+- **`SplashForm`** (the user-requested addition in
+  `2026-09-05-splash-form-and-mainform-rename.md`) renames `MainForm` to
+  `ConversationForm`; if this plan runs after that one, every reference to
+  `MainForm.cs` / `MainForm.Designer.cs` below should be read as
+  `ConversationForm.cs` / `ConversationForm.Designer.cs`. The Tasks 8-10
+  File Structure sections list `MainForm.cs`/`MainForm.Designer.cs` (not
+  updated for the rename) — substitute the new file names as needed.
+- **`MarkdownLabel` text rendering is synchronous on the UI thread**, so
+  Task 8's `DebugLogPanel.AppendLine` is safe to call directly from
+  `OnProtocolWarning`/`OnAgentExited` only when those handlers marshal to
+  the UI thread first (see Phase 3 implementation notes). Use
+  `_debugLogPanel.BeginInvoke(() => _debugLogPanel.AppendLine(line))` if
+  the raising thread is anything other than the UI thread.
