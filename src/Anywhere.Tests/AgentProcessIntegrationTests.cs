@@ -29,15 +29,16 @@ public class AgentProcessIntegrationTests {
       Command = "python",
       Args = new[] { fakeAgentPath },
       Env = new System.Collections.Generic.Dictionary<string, string>(),
-      WorkingDir = System.IO.Directory.GetCurrentDirectory(),
     };
   }
+
+  private static readonly string fakeCwd = System.IO.Directory.GetCurrentDirectory();
 
   [Fact(Timeout = 30000)]
   public async Task SendPromptAsync_returns_the_fake_agents_response() {
     var profile = NewFakeProfile();
 
-    using var process = new AgentProcess(profile);
+    using var process = new AgentProcess(profile, fakeCwd);
     await process.StartAsync();
 
     var result = await process.SendPromptAsync("hello");
@@ -49,7 +50,7 @@ public class AgentProcessIntegrationTests {
   public async Task SendPromptAsync_raises_OnResponseChunk_before_completing() {
     var profile = NewFakeProfile();
 
-    using var process = new AgentProcess(profile);
+    using var process = new AgentProcess(profile, fakeCwd);
     await process.StartAsync();
 
     var chunks = new List<string>();
@@ -64,7 +65,7 @@ public class AgentProcessIntegrationTests {
   public async Task SendPromptAsync_throws_when_cancelled_mid_prompt() {
     var profile = NewFakeProfile();
 
-    using var process = new AgentProcess(profile);
+    using var process = new AgentProcess(profile, fakeCwd);
     await process.StartAsync();
 
     using var cts = new CancellationTokenSource();

@@ -34,6 +34,20 @@ public class ProfileRepositoryTests : IDisposable {
     Assert.Equal("Claude Code", fetched!.Name);
     Assert.Equal("claude-code-acp", fetched.Command);
     Assert.Equal(new[] { "--stdio" }, fetched.Args);
+    Assert.Equal(@"C:\work", fetched.WorkingDir);
+  }
+
+  [Fact]
+  public async Task InsertAsync_allows_a_null_default_working_dir() {
+    ProfileRepository repo = new ProfileRepository(db);
+    int id = await repo.InsertAsync(new AgentProfile {
+      Name = "No default dir",
+      Command = "agent",
+      Args = Array.Empty<string>(),
+      Env = new System.Collections.Generic.Dictionary<string, string>(),
+    });
+
+    Assert.Null((await repo.GetAsync(id))!.WorkingDir);
   }
 
   [Fact]
@@ -44,7 +58,6 @@ public class ProfileRepositoryTests : IDisposable {
       Command = "cmd1",
       Args = Array.Empty<string>(),
       Env = new System.Collections.Generic.Dictionary<string, string>(),
-      WorkingDir = @"C:\work",
     });
 
     AgentProfile? toUpdate = await repo.GetAsync(id);
@@ -65,7 +78,6 @@ public class ProfileRepositoryTests : IDisposable {
       Command = "cmd",
       Args = Array.Empty<string>(),
       Env = new System.Collections.Generic.Dictionary<string, string>(),
-      WorkingDir = @"C:\work",
     });
 
     await repo.DeleteAsync(id);

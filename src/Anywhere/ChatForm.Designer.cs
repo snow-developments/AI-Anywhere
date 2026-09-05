@@ -18,6 +18,7 @@ partial class ChatForm {
   private System.Windows.Forms.ToolStripMenuItem agentMenu;
   private System.Windows.Forms.ToolStripMenuItem manageProfilesMenuItem;
   private System.Windows.Forms.ToolStripComboBox profilePicker;
+  private System.Windows.Forms.ToolStripButton changeDirButton;
 
   /// <summary>
   ///  Clean up any resources being used.
@@ -49,6 +50,7 @@ partial class ChatForm {
     agentMenu = new System.Windows.Forms.ToolStripMenuItem();
     manageProfilesMenuItem = new System.Windows.Forms.ToolStripMenuItem();
     profilePicker = new System.Windows.Forms.ToolStripComboBox();
+    changeDirButton = new System.Windows.Forms.ToolStripButton();
 
     //
     // debugLog
@@ -80,6 +82,14 @@ partial class ChatForm {
     profilePicker.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
     profilePicker.SelectedIndexChanged += OnProfilePickerChanged;
     //
+    // changeDirButton
+    //
+    changeDirButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+    changeDirButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+    changeDirButton.Text = "(no directory)";
+    changeDirButton.ToolTipText = "Choose a working directory";
+    // Click handler wired in ChatForm.cs.
+    //
     // debugLogMenuItem
     //
     debugLogMenuItem.Text = "&Debug Log";
@@ -107,6 +117,7 @@ partial class ChatForm {
     menuStrip.Items.Add(agentMenu);
     menuStrip.Items.Add(viewMenu);
     menuStrip.Items.Add(profilePicker);
+    menuStrip.Items.Add(changeDirButton);
     //
     // inputPanel
     //

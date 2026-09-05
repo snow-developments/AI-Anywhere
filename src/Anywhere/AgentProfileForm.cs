@@ -43,7 +43,7 @@ public partial class AgentProfileForm : Form {
     nameBox.Text = p.Name;
     commandBox.Text = p.Command;
     argsBox.Text = string.Join(", ", p.Args);
-    workingDirBox.Text = p.WorkingDir;
+    workingDirBox.Text = p.WorkingDir ?? string.Empty;
     deleteButton.Enabled = true;
   }
 
@@ -64,8 +64,8 @@ public partial class AgentProfileForm : Form {
     var name = nameBox.Text.Trim();
     var command = commandBox.Text.Trim();
     var workingDir = workingDirBox.Text.Trim();
-    if (name.Length == 0 || command.Length == 0 || workingDir.Length == 0) {
-      MessageBox.Show(this, "Name, Command, and Working directory are required.",
+    if (name.Length == 0 || command.Length == 0) {
+      MessageBox.Show(this, "Name and Command are required.",
         "Incomplete profile", MessageBoxButtons.OK, MessageBoxIcon.Warning);
       return;
     }
@@ -74,7 +74,9 @@ public partial class AgentProfileForm : Form {
       Name = name,
       Command = command,
       Args = AgentProfileParser.ParseArgs(argsBox.Text),
-      WorkingDir = workingDir,
+      // Optional per-profile default that pre-fills the conversation directory
+      // picker; the actual cwd is chosen per conversation.
+      WorkingDir = workingDir.Length == 0 ? null : workingDir,
       // Env has no UI in v1 — carry the existing value through on edit.
       Env = loaded?.Env ?? new(),
     };

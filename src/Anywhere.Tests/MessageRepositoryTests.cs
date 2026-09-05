@@ -24,7 +24,6 @@ public class MessageRepositoryTests : IDisposable {
       Command = "echo",
       Args = Array.Empty<string>(),
       Env = new System.Collections.Generic.Dictionary<string, string>(),
-      WorkingDir = @"C:\work",
     });
 
     SessionRepository sessions = new SessionRepository(db);

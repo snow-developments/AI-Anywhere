@@ -18,14 +18,25 @@ public partial class ChatForm : Form {
   private readonly AgentProfile? startingProfile;
   private bool populatingPicker;
 
-  public ChatForm() : this(null) { }
+  /// <summary>
+  /// The conversation's working directory — a per-conversation runtime choice,
+  /// not a profile property. Picked when the conversation starts and
+  /// changeable at any point via <see cref="OnChangeDirClicked"/>.
+  /// </summary>
+  private string? currentWorkingDir;
 
-  public ChatForm(AgentProfile? profile) {
+  public ChatForm() : this(null, null) { }
+
+  public ChatForm(AgentProfile? profile) : this(profile, null) { }
+
+  public ChatForm(AgentProfile? profile, string? workingDirectory) {
     startingProfile = profile;
+    currentWorkingDir = workingDirectory;
     InitializeComponent();
     permissionPanel.OutcomeChosen += OnPermissionOutcomeChosen;
     inputPanel.SendRequested += OnSendRequested;
     inputPanel.CancelRequested += OnCancelRequested;
+    changeDirButton.Click += OnChangeDirClicked;
     Load += OnLoad;
     FormClosed += OnFormClosed;
   }
@@ -40,6 +51,17 @@ public partial class ChatForm : Form {
       messages = new MessageRepository(db);
 
       await ReloadProfilesAsync(startingProfile?.Id);
+
+      // The working directory is always an explicit per-conversation choice.
+      // The splash flow supplies one; if it didn't (e.g. ChatForm opened
+      // directly), prompt now rather than guessing a cwd.
+      currentWorkingDir ??= PromptForDirectory(SelectedProfile?.WorkingDir);
+      if (currentWorkingDir is null) {
+        transcript.AppendMessage("system", "No working directory chosen. Pick one to start the agent.");
+        UpdateChangeDirButton();
+        return;
+      }
+
       await StartAgentAsync();
     } catch (Exception ex) {
       transcript.AppendMessage("system", $"Failed to start agent: {ex.Message}");
@@ -91,9 +113,11 @@ public partial class ChatForm : Form {
       return;
     }
 
-    sessionId = await sessions.InsertAsync(profile.Id, profile.WorkingDir);
+    if (currentWorkingDir is null) return;
 
-    var next = new AgentProcess(profile);
+    sessionId = await sessions.InsertAsync(profile.Id, currentWorkingDir);
+
+    var next = new AgentProcess(profile, currentWorkingDir);
     next.OnResponseChunk += chunk =>
       transcript.BeginInvoke(() => transcript.AppendToCurrentAgentMessage(chunk));
     next.OnPermissionRequested += request =>
@@ -112,6 +136,51 @@ public partial class ChatForm : Form {
     await next.StartAsync();
     agent = next;
     restartBar.Visible = false;
+    UpdateChangeDirButton();
+  }
+
+  /// <summary>
+  /// Change the conversation's working directory. ACP fixes a session's
+  /// <c>cwd</c> at <c>session/new</c>, so this tears down the current agent and
+  /// starts a fresh session in the new directory; the persisted transcript
+  /// carries over, the agent's in-memory context does not.
+  /// </summary>
+  private async void OnChangeDirClicked(object? sender, EventArgs e) {
+    var picked = PromptForDirectory(currentWorkingDir);
+    if (picked is null || picked == currentWorkingDir) return;
+
+    var hadSession = agent is not null;
+    currentWorkingDir = picked;
+    try {
+      if (sessions is not null && hadSession) {
+        await sessions.UpdateWorkingDirAsync(sessionId, picked);
+      }
+      transcript.AppendMessage("system",
+        hadSession ? $"Working directory changed to {picked}." : $"Working directory set to {picked}.");
+      await StartAgentAsync();
+    } catch (Exception ex) {
+      transcript.AppendMessage("system", $"Failed to change working directory: {ex.Message}");
+    }
+  }
+
+  /// <summary>
+  /// Show a folder picker seeded with <paramref name="seed"/> (falling back to
+  /// the OS current directory). Returns null if the user cancels.
+  /// </summary>
+  private string? PromptForDirectory(string? seed) {
+    using var dialog = new FolderBrowserDialog {
+      Description = "Working directory for this conversation",
+      UseDescriptionForTitle = true,
+      SelectedPath = Directory.Exists(seed) ? seed! : Environment.CurrentDirectory,
+    };
+    return dialog.ShowDialog(this) == DialogResult.OK ? dialog.SelectedPath : null;
+  }
+
+  private void UpdateChangeDirButton() {
+    changeDirButton.Text = currentWorkingDir is null
+      ? "(no directory)"
+      : new DirectoryInfo(currentWorkingDir).Name;
+    changeDirButton.ToolTipText = currentWorkingDir ?? "Choose a working directory";
   }
 
   private async void OnRestartAgentClicked(object? sender, EventArgs e) {
@@ -193,6 +262,6 @@ public partial class ChatForm : Form {
     Args = [Path.GetFullPath(Path.Combine(
       AppContext.BaseDirectory, "..", "..", "..", "..",
       "Anywhere.Tests", "FakeAgent", "fake_agent.py"))],
-    WorkingDir = Environment.CurrentDirectory,
+    // WorkingDir intentionally unset — the directory is picked per conversation.
   };
 }

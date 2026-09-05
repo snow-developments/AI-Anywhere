@@ -71,7 +71,7 @@ partial class AgentProfileForm {
     //
     // workingDirLabel
     //
-    workingDirLabel.Text = "Working directory";
+    workingDirLabel.Text = "Default directory (optional)";
     workingDirLabel.AutoSize = true;
     workingDirLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
     //

@@ -106,8 +106,11 @@ Four .NET projects:
 
 - `AgentProfile` — `Id`, `Name`, `Command`, `Args` (`string[]`, stored as a JSON
   column via an EF Core value converter), `Env` (`Dictionary<string,string>`,
-  same conversion), `WorkingDir`, `CreatedAt`.
-- `Session` — `Id`, `ProfileId` (FK), `WorkingDir`, `CreatedAt`.
+  same conversion), `WorkingDir` (nullable — an optional per-profile default
+  that pre-fills the picker, never used directly as a session `cwd`),
+  `CreatedAt`.
+- `Session` — `Id`, `ProfileId` (FK), `WorkingDir` (the conversation's actual
+  `cwd`, chosen per conversation and changeable at any time), `CreatedAt`.
 - `Message` — `Id`, `SessionId` (FK), `Role` (`user`/`agent`/`system`),
   `Content` (text), `ToolCallJson` (nullable, JSON blob for tool-call metadata),
   `CreatedAt`.

@@ -84,13 +84,34 @@ public partial class SplashForm : Form {
   /// <summary>
   /// Opens a <see cref="ChatForm"/> for the given session, or for a
   /// brand-new session if <paramref name="sessionId"/> is null. The profile
-  /// chosen in the splash picker (if any) seeds the new conversation.
+  /// chosen in the splash picker (if any) seeds the new conversation. A new
+  /// conversation always requires an explicit working-directory pick — cancel
+  /// aborts and the splash stays put.
   /// </summary>
-  // FIXME: `sessionId` is unused
+  // FIXME: `sessionId` is unused — resuming an existing session is not wired yet.
   internal void OpenConversation(int? sessionId) {
-    var form = new ChatForm(profilePicker.SelectedItem as AgentProfile) { Owner = this };
+    var profile = profilePicker.SelectedItem as AgentProfile;
+
+    string? workingDir = null;
+    if (sessionId is null) {
+      workingDir = PromptForDirectory(profile?.WorkingDir);
+      if (workingDir is null) {
+        return;
+      }
+    }
+
+    var form = new ChatForm(profile, workingDir) { Owner = this };
     form.Show();
     Hide();
+  }
+
+  private string? PromptForDirectory(string? seed) {
+    using var dialog = new FolderBrowserDialog {
+      Description = "Working directory for this conversation",
+      UseDescriptionForTitle = true,
+      SelectedPath = Directory.Exists(seed) ? seed! : Environment.CurrentDirectory,
+    };
+    return dialog.ShowDialog(this) == DialogResult.OK ? dialog.SelectedPath : null;
   }
 
   protected override void OnFormClosing(FormClosingEventArgs e) {

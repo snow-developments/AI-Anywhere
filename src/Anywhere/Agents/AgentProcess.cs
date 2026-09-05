@@ -31,6 +31,7 @@ namespace Anywhere.Agents;
 /// </remarks>
 public sealed class AgentProcess : IDisposable {
   private readonly AgentProfile profile;
+  private readonly string workingDirectory;
   private Process? process;
   private ClientSideConnection? connection;
   private string? sessionId;
@@ -51,8 +52,14 @@ public sealed class AgentProcess : IDisposable {
   /// </summary>
   public event Action<string>? OnProtocolWarning;
 
-  public AgentProcess(AgentProfile profile) {
+  /// <param name="workingDirectory">
+  /// The session <c>cwd</c> — a per-conversation runtime choice, not a profile
+  /// property. ACP fixes this at <c>session/new</c>; changing it means a new
+  /// <see cref="AgentProcess"/>.
+  /// </param>
+  public AgentProcess(AgentProfile profile, string workingDirectory) {
     this.profile = profile;
+    this.workingDirectory = workingDirectory;
     adapter = new AcpClientAdapter(this);
   }
 
@@ -60,7 +67,7 @@ public sealed class AgentProcess : IDisposable {
     process = new Process {
       StartInfo = new ProcessStartInfo {
         FileName = profile.Command,
-        WorkingDirectory = profile.WorkingDir,
+        WorkingDirectory = workingDirectory,
         UseShellExecute = false,
         CreateNoWindow = true,
         RedirectStandardOutput = true,
@@ -110,6 +117,10 @@ public sealed class AgentProcess : IDisposable {
 
     var initResult = await connection.InitializeAsync(new InitializeRequest {
       ProtocolVersion = 1,
+      ClientInfo = new Implementation {
+        Name = "Anywhere",
+        Version = typeof(AgentProcess).Assembly.GetName().Version?.ToString() ?? "0.1.0",
+      },
       ClientCapabilities = new ClientCapabilities(),
     });
 
@@ -119,7 +130,7 @@ public sealed class AgentProcess : IDisposable {
     }
 
     var sessionResult = await connection.NewSessionAsync(new NewSessionRequest {
-      Cwd = profile.WorkingDir,
+      Cwd = workingDirectory,
       McpServers = [],
     });
     sessionId = sessionResult.SessionId;

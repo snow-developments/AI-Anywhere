@@ -3,6 +3,7 @@ using System;
 using Anywhere.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Anywhere.Models.Migrations
 {
     [DbContext(typeof(AnywhereDbContext))]
-    partial class AnywhereDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905230444_MakeProfileWorkingDirOptional")]
+    partial class MakeProfileWorkingDirOptional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
