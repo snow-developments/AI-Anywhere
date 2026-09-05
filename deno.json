@@ -1,7 +1,9 @@
 {
   "tasks": {
-    "fmt": "deno fmt ./docs",
-    "lint": "dotnet tool restore && dotnet tool run roslynator analyze Anywhere.slnx"
+    "fmt": "deno fmt ./**/*.ts ./**/*.tsx ./**/*.js ./**/*.jsx ./docs ./*.md",
+    "lint": "deno task lint:js && deno task lint:cs",
+    "lint:js": "deno check **/*.ts **/*.js",
+    "lint:cs": "dotnet tool restore && dotnet tool run cslint -- src --severity warning --exclude '**/Anywhere.Models/Migrations/*.cs'"
   },
   "imports": {}
 }
