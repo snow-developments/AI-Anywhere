@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Anywhere;
 
-public partial class MainForm : Form {
+public partial class ConversationForm : Form {
   private AnywhereDbContext? db;
   private AgentProcess? agent;
   private MessageRepository? messages;
   private int sessionId;
 
-  public MainForm() {
+  public ConversationForm() {
     InitializeComponent();
     permissionPanel.OutcomeChosen += OnPermissionOutcomeChosen;
     inputBox.KeyDown += OnInputBoxKeyDown;

@@ -1,6 +1,6 @@
 ﻿namespace Anywhere;
 
-partial class MainForm {
+partial class ConversationForm {
   /// <summary>
   ///  Required designer variable.
   /// </summary>
@@ -52,7 +52,7 @@ partial class MainForm {
     ClientSize = new Size(800, 450);
     // FIXME: Regression: App icon is missing
     StartPosition = FormStartPosition.CenterScreen;
-    Text = "Anywhere";
+    Text = "Conversation";
 
     inputPanel.ResumeLayout(false);
   }
