@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="src/Anywhere.Controls/Anywhere.Controls.csproj" />
+  <Project Path="src/Anywhere.Design/Anywhere.Design.csproj" />
+  <Project Path="src/Anywhere.Models/Anywhere.Models.csproj" />
+  <Project Path="src/Anywhere.Tests/Anywhere.Tests.csproj" />
+  <Project Path="src/Anywhere/Anywhere.csproj" />
+</Solution>

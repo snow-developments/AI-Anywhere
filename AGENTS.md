@@ -21,15 +21,18 @@ Implementation plan (split into four phased plans, each independently executable
 ## Commands
 
 ```bash
+dotnet tool restore                                                           # required before anything else — installs dotnet-ef, cslint
 dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj                          # run all tests
 dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter <TestClassName> # run one test class
 dotnet run --project src/Anywhere/Anywhere.csproj                             # run the app
 dotnet build Anywhere.sln                                                     # build everything
 dotnet ef migrations add <Name> --project src/Anywhere.Models --startup-project src/Anywhere  # new migration
 dotnet ef database update --project src/Anywhere.Models --startup-project src/Anywhere        # apply migrations locally
+dotnet format Anywhere.slnx --verify-no-changes                              # style/.editorconfig check
+dotnet cslint                                                                 # lint (required tool, see .config/dotnet-tools.json)
 ```
 
-`dotnet ef` is a local tool (see the Task 1 tool-manifest step) — run these from the repo root so the manifest resolves.
+`dotnet-ef` and `cslint` are local tools pinned in `.config/dotnet-tools.json` (the standard tool-manifest path created by `dotnet new tool-manifest`) — run `dotnet tool restore` from the repo root before using either of them.
 
 ### Testing Strategy
 

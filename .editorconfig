@@ -45,10 +45,11 @@ csharp_style_expression_bodied_indexers = when_on_single_line:suggestion
 csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
 csharp_style_expression_bodied_lambdas = when_on_single_line:suggestion
 
-# Braces only required once a block spans more than one line — see Style Guide.md
-csharp_prefer_braces = when_multiline:suggestion
+# K&R style (https://en.wikipedia.org/wiki/Indentation_style#K&R): braces always present, opening brace on the same line
+csharp_prefer_braces = true:suggestion
 csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_style_prefer_top_level_statements = false:suggestion
+dotnet_diagnostic.IDE0210.severity = none
 
 # Pattern matching / null checks
 csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
