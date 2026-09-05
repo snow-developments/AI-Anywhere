@@ -96,7 +96,8 @@ Four .NET projects:
      (`Anywhere.Models`), user-editable without a rebuild. Exposed through thin
      concrete repository classes (`ProfileRepository`, etc.) — no repository
      interfaces, since there's one data store and the project's tests already
-     favor real backends over mocks/fakes.
+     favor real backends over mocks/fakes. The full rationale lives in
+     [`docs/Architecture.md` → Design Decisions → No repository interfaces](../../Architecture.md#no-repository-interfaces).
    - **UI layer** — `MainForm` composes `Anywhere.Controls` widgets: chat
      transcript (one `MarkdownLabel`-based bubble per message), input textbox, a
      docked permission/diff panel above the input, and an agent/session picker.
