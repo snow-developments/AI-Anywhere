@@ -75,13 +75,23 @@ public sealed class AgentProcess : IDisposable {
     if (!process.Start()) {
       throw new InvalidOperationException("Failed to start agent process.");
     }
+    var started = process;
     process.EnableRaisingEvents = true;
     process.Exited += (_, _) => {
-      // A caller-initiated Dispose() kills the process (exit code -1 on
-      // Windows) — that is an intentional teardown (profile switch, window
-      // close), not a crash, so stay quiet. Only surface an exit the agent
-      // decided on itself.
-      if (!disposing) OnAgentExited?.Invoke($"exit code {process.ExitCode}");
+      // Fires on a thread-pool thread and can race Dispose() tearing the
+      // Process down — reading ExitCode on a disposed Process throws
+      // "No process is associated with this object". A caller-initiated
+      // Dispose() (profile switch, window close) also kills the process
+      // (exit code -1 on Windows); that is an intentional teardown, not a
+      // crash. Both cases: stay quiet.
+      if (disposing) return;
+      int code;
+      try {
+        code = started.ExitCode;
+      } catch (InvalidOperationException) {
+        return;
+      }
+      OnAgentExited?.Invoke($"exit code {code}");
     };
 
     // stderr is redirected but never consumed by acp-csharp; drain it
@@ -156,15 +166,21 @@ public sealed class AgentProcess : IDisposable {
       // the agent process exited/closed its streams first), that CTS is already
       // disposed and Cancel() throws. Dispose() must never throw, so swallow it.
     }
-    if (process is not null && !process.HasExited) {
+    if (process is not null) {
+      // Every Process member below throws "No process is associated with this
+      // object" once the Process has been disposed or never fully started, and
+      // Dispose() must never throw — so guard the whole teardown.
       try {
-        process.Kill(entireProcessTree: true);
-        process.WaitForExit(2000);
+        process.EnableRaisingEvents = false;
+        if (!process.HasExited) {
+          process.Kill(entireProcessTree: true);
+          process.WaitForExit(2000);
+        }
       } catch {
-        // best-effort cleanup; the process may already be exiting on its own
+        // best-effort cleanup; the process may already be gone
       }
+      process.Dispose();
     }
-    process?.Dispose();
   }
 
   // ---- Adapter: implements IAcpClient so acp-csharp can call back into us ----

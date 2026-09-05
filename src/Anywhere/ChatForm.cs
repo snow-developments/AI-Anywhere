@@ -106,8 +106,11 @@ public partial class ChatForm : Form {
     next.OnProtocolWarning += line =>
       BeginInvoke(() => debugLog.AppendLine(line));
 
+    // Publish to `agent` only after the handshake completes — otherwise a
+    // prompt sent during the await races an agent whose connection/session are
+    // still null and fails with "StartAsync must complete before SendPromptAsync".
+    await next.StartAsync();
     agent = next;
-    await agent.StartAsync();
     restartBar.Visible = false;
   }
 
