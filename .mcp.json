@@ -3,6 +3,10 @@
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "interactive-choice": {
+      "command": "npx",
+      "args": ["-y", "mcp-interactive-choice", "--timeout", "300"]
     }
   }
 }

@@ -117,4 +117,13 @@ before writing or renaming any `.cs` symbol.
 - `.agents/skills/uspto-wordmark-search/` — a project-local skill for trademark
   searches; see `TODO.md` for the pending "Anywhere" wordmark check that gates
   finalizing the project name.
-- `.mcp.json` configures the `context7` MCP server for library-docs lookups.
+- `.mcp.json` configures the `context7` MCP server for library-docs lookups and the
+  `interactive-choice` MCP server for temporary questionnaire dogfooding.
+- Until the questionnaire epic is implemented in Anywhere itself, use the
+  `interactive-choice` MCP server's `ask_user` tool when an agent needs a human
+  decision during work. It opens a native choice window and supports predefined
+  choices plus a custom answer. Provide a non-empty `choices` array and set
+  `recommended` only to an exact member of that array. The project configuration
+  allows up to five minutes for a response; reload the MCP configuration after
+  changing `.mcp.json`. Clients with shorter tool-call limits may still interrupt
+  the request before the server timeout.

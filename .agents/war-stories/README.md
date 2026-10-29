@@ -14,3 +14,4 @@ is not a diary.
 - [0001 — Custom theming rewrite, then a from-memory diagnostic ID](0001-theme-rewrite-and-wfo5001.md)
 - [0002 — Chat bubbles: invisible text, then ghost rectangles](0002-chat-bubble-render-bugs.md)
 - [0003 — Fluent styling: two dead libraries, a duplicate-row flood, a chatty teardown](0003-fluent-library-thrash-and-profile-dupes.md)
+- [0004 — Questionnaire epic PRD: four rule violations polishing one document](0004-questionnaire-epic-prd-polish-misses.md)
