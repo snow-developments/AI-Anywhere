@@ -8,15 +8,15 @@ Interactive Questionnaire MCP
 
 ### Problem
 
-Agents need a reliable way to ask users for structured decisions during a task. Plain-text prompts are easy to miss, difficult to answer consistently, and unable to express common interaction patterns such as a labeled yes/no decision, a single choice with a write-in answer, or selecting several suggestions while adding an option not anticipated by the agent. The existing `Anywhere.Controls` foundation can provide a native questionnaire experience, but agents need an MCP-facing contract and a distributable server that can invoke it.
+Agents need a reliable way to ask users for structured decisions during a task. Plain-text prompts are easy to miss and hard to answer consistently. They can't express a labeled yes/no decision, a single choice with a write-in answer, or several suggestions plus an unanticipated option. The existing `Anywhere.Controls` foundation can provide a native questionnaire experience. Agents need an MCP-facing contract and a distributable server to invoke it.
 
-The epic also needs a clear boundary between UI behavior, shared questionnaire data contracts, and MCP transport. Without shared contracts in `Anywhere.Models`, the UI and server can drift in how they represent choices, write-ins, cancellation, and results.
+The epic needs a clear boundary between UI behavior, shared questionnaire data contracts, and MCP transport. Without shared contracts in `Anywhere.Models`, the UI and server can drift in how they represent choices, write-ins, cancellation, and results.
 
 ### Solution
 
 Deliver an agent-facing MCP server, distributed as a separate process or package, that uses the `Anywhere.Controls` foundation to present native interactive questionnaires. The first release will support yes/no questions with customizable labels, single-select multiple choice with an optional write-in answer, and multi-select suggestions with an optional `Other` write-in answer.
 
-The shared questionnaire contracts and models will live in `Anywhere.Models` so the separately distributed MCP server and the Anywhere application can exchange framework-agnostic request and response data. The server will translate MCP tool calls into native questionnaire interactions and return structured user outcomes to the calling agent.
+The shared questionnaire contracts and models live in `Anywhere.Models`. This lets the separately distributed MCP server and the Anywhere application exchange framework-agnostic request and response data. The server translates MCP tool calls into native questionnaire interactions and returns structured user outcomes to the calling agent.
 
 ### Impact
 
@@ -118,7 +118,7 @@ A developer maintaining the native controls and shared models. They need contrac
   - All models are plain POCOs with no WinForms or MCP SDK references, serializable with the same JSON settings the MCP server and the standalone question-window process both use.
 - Keep shared models usable by both the separately distributed MCP server and the standalone question-window process it launches.
 - Represent question kind and answer cardinality explicitly on `QuestionnaireRequest` rather than inferring them from UI controls.
-- No EF Core entities, `DbSet`, or migrations for questionnaires in v1 — in-memory only, per the persistence decision above.
+- No EF Core entities, `DbSet`, or migrations for questionnaires in v1: results are in-memory only, never persisted.
 
 #### Operational Behavior
 

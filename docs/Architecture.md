@@ -33,9 +33,11 @@ arrow**:
     See [Design Decisions — No repository interfaces](#no-repository-interfaces)
     for the rationale and links to the spec, the agent guidance file, and the
     plans that depend on it.
-  - **UI layer** (`MainForm` + `Anywhere.Controls` widgets) — chat transcript,
-    input box, a permission/diff panel docked above the input, agent/session
-    picker.
+  - **UI layer**: `SplashForm` is the borderless app-shell window shown at startup
+    (custom title bar, "New conversation" button, recent-conversations list) and
+    owns the lifetime of conversation windows. `ChatForm` is the per-conversation
+    window, composed of `Anywhere.Controls.ChatTranscriptPanel` and
+    `PermissionDiffPanel`.
 
 Data model (SQLite, under local — never roaming — `%APPDATA%\Anywhere\`):
 `AgentProfile`, `Session`, `Message` entities on one `AnywhereDbContext`. Schema

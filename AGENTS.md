@@ -3,21 +3,6 @@
 Agent-agnostic guidance for working in this repository. `CLAUDE.md` imports this
 file.
 
-## Project Status
-
-Phases 1-3 (`docs/superpowers/plans/archive/2026-09-05-phase-{1,2,3}-*.md`,
-archived as complete) and the
-splash-form/`ConversationForm`-rename plan are implemented. Phase 4
-(`docs/superpowers/plans/2026-09-05-phase-4-polish.md` — crash recovery, profile
-management UI, visual styling) has not been executed yet.
-
-UI layer: `SplashForm` is the borderless app-shell window shown at startup
-(custom title bar, "New conversation" button, recent-conversations list);
-`ChatForm` (formerly `MainForm`, then `ConversationForm`) is the per-conversation window,
-composed of `Anywhere.Controls.ChatTranscriptPanel` and `PermissionDiffPanel`.
-The splash owns the message loop and stays open as `Owner` of conversation
-windows; closing it exits the app.
-
 ## What this is thing?
 
 **Anywhere** — a native WinForms desktop client for the
@@ -28,7 +13,7 @@ this client is native, hackable, and scoped to daily power-user needs. It is
 agent-agnostic — it launches and speaks ACP to any configured agent subprocess,
 not just Claude Code.
 
-Full design spec: `docs/superpowers/specs/2026-09-04-design.md`
+Full design spec: `docs/superpowers/specs/Design.md`
 
 Implementation plans are split into four phased plans, each independently
 executable/testable; see `docs/superpowers/plans/` for details.
@@ -40,7 +25,7 @@ dotnet tool restore                                                           # 
 dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj                          # run all tests
 dotnet test src/Anywhere.Tests/Anywhere.Tests.csproj --filter <TestClassName> # run one test class
 dotnet run --project src/Anywhere/Anywhere.csproj                             # run the app
-dotnet build Anywhere.sln                                                     # build everything
+dotnet build Anywhere.slnx                                                    # build everything
 dotnet ef migrations add <Name> --project src/Anywhere.Models --startup-project src/Anywhere  # new migration
 dotnet ef database update --project src/Anywhere.Models --startup-project src/Anywhere        # apply migrations locally
 dotnet format Anywhere.slnx --verify-no-changes                              # style/.editorconfig check
@@ -111,6 +96,11 @@ before writing or renaming any `.cs` symbol.
   `gh api repos/<owner>/<repo>/contents/<path>` (add `?ref=<branch>` when
   needed) for directory listings and file contents, and
   `gh api repos/<owner>/<repo>/readme` for the rendered README.
+- **No Fabricated Feedback IDs.** An `Anthropic_Feedback_ID` frontmatter field
+  on a war-story file is added only when the user actually submitted that
+  feedback to Anthropic and gave you its ID. Never invent one, copy one from
+  another file, or reuse a session/transcript ID as a stand-in. Most
+  war-story files have no such field.
 
 ## Other Resources
 
@@ -119,11 +109,3 @@ before writing or renaming any `.cs` symbol.
   finalizing the project name.
 - `.mcp.json` configures the `context7` MCP server for library-docs lookups and the
   `interactive-choice` MCP server for temporary questionnaire dogfooding.
-- Until the questionnaire epic is implemented in Anywhere itself, use the
-  `interactive-choice` MCP server's `ask_user` tool when an agent needs a human
-  decision during work. It opens a native choice window and supports predefined
-  choices plus a custom answer. Provide a non-empty `choices` array and set
-  `recommended` only to an exact member of that array. The project configuration
-  allows up to five minutes for a response; reload the MCP configuration after
-  changing `.mcp.json`. Clients with shorter tool-call limits may still interrupt
-  the request before the server timeout.

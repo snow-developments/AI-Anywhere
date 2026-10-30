@@ -6,8 +6,8 @@ these silently is a bug.
 
 - Dependency direction `Anywhere` → `Anywhere.Controls` → `Anywhere.Design`, and
   `Anywhere` → `Anywhere.Models`, is one-way. `Anywhere.Design` and
-  `Anywhere.Models` must stay UI-framework-agnostic, and neither is ever
-  referenced by `Anywhere.Controls`.
+  `Anywhere.Models` must stay UI-framework-agnostic: neither references WinForms
+  or `Anywhere.Controls`.
 - ACP transport goes through the `acp-csharp` NuGet package (nuskey8/acp-csharp)
   — do not hand-roll JSON-RPC framing. Contribute fixes upstream rather than
   forking.
